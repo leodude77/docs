@@ -1,1 +1,14 @@
-site_name: My Docs
+site_name: Docs
+nav:
+  - Home: index.md
+  - Big Data Batch 43: 
+    - Week 7: 'big_data/week_7/index.md'
+    - Week 8: 'big_data/week_8/index.md'
+
+markdown_extensions:
+  - pymdownx.magiclink
+
+plugins:
+  - glightbox
+
+theme: readthedocs
