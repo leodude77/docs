@@ -1,0 +1,66 @@
+==================
+hadoop dfsadmin -safemode leave
+
+mysql --user=root --password=cloudera
+drop database mcheck;
+create database mcheck;
+use mcheck;
+
+drop table if exists mtab;
+create table mtab(id int,name varchar(100),amount int);
+insert into mtab values(1,'zeyo',40);
+insert into mtab values(2,'vasu',50);
+insert into mtab values(3,'rani',70);
+insert into mtab values(4,'vani',40);
+insert into mtab values(5,'hema',50);
+insert into mtab values(6,'hari',70);
+insert into mtab values(7,'raki',40);
+insert into mtab values(8,'vira',50);
+insert into mtab values(9,'rupa',70);
+insert into mtab values(10,'Siji',40);
+insert into mtab values(11,'rapo',50);
+insert into mtab values(12,'visu',70);
+select * from mtab;
+quit;
+
+
+===============
+🔴1 Mapper
+===============
+
+
+
+sqoop import --connect jdbc:mysql://localhost/mcheck --username root --password cloudera --table mtab --m 1 --delete-target-dir --target-dir /user/cloudera/mdata1
+
+hadoop fs -ls /user/cloudera/mdata1/ 
+hadoop fs -cat  /user/cloudera/mdata1/part-m-00000 
+
+
+
+===============
+🔴2 Mapper
+===============
+
+
+
+sqoop import --connect jdbc:mysql://localhost/mcheck --username root --password cloudera --table mtab --m 2 --split-by id --delete-target-dir --target-dir /user/cloudera/mdata2
+
+hadoop fs -ls /user/cloudera/mdata2/ 
+hadoop fs -cat  /user/cloudera/mdata2/part-m-00000 
+hadoop fs -cat  /user/cloudera/mdata2/part-m-00001
+
+
+
+
+===============
+🔴 Mapper 4 /NO MAPPERS
+===============
+
+
+sqoop import --connect jdbc:mysql://localhost/mcheck --username root --password cloudera --table mtab  --split-by id --delete-target-dir --target-dir /user/cloudera/mdata4
+
+hadoop fs -ls /user/cloudera/mdata4/ 
+hadoop fs -cat  /user/cloudera/mdata4/part-m-00000 
+hadoop fs -cat  /user/cloudera/mdata4/part-m-00001
+hadoop fs -cat  /user/cloudera/mdata4/part-m-00002
+hadoop fs -cat  /user/cloudera/mdata4/part-m-00003

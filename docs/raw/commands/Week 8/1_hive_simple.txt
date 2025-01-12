@@ -1,0 +1,27 @@
+
+🔴 Cloudera Folks
+==============
+
+hadoop dfsadmin -safemode leave
+
+hive      ---> type and enter
+create database   odb;
+use odb;
+create table  otab(id int);
+insert into otab values(1000);
+select * from otab;
+
+==============
+🔴quit from hive
+==============
+
+quit;
+
+==============
+🔴 VALIDATION 
+==============
+
+hadoop   fs   -ls   /user/hive/warehouse/
+hadoop   fs   -ls   /user/hive/warehouse/odb.db
+hadoop   fs   -ls   /user/hive/warehouse/odb.db/otab
+hadoop   fs   -cat  /user/hive/warehouse/odb.db/otab/000000_0

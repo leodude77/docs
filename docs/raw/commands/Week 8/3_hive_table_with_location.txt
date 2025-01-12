@@ -1,0 +1,32 @@
+
+======================
+🔴 Cloudera Folks LOCATION
+======================
+hadoop dfsadmin -safemode leave
+
+cd
+echo 1,zeyo,40 > zfile
+echo 2,ravi,70 >> zfile
+echo 3,rani,70 >> zfile
+
+
+hadoop  fs   -mkdir  /user/cloudera/ddir
+
+hadoop  fs   -put   /home/cloudera/zfile  /user/cloudera/ddir/
+
+
+hive   -- type and enter
+
+drop database if exists ldb cascade;
+
+create database if not exists ldb;
+
+use ldb;
+
+create table ltab(id int,name string,amt int) row format delimited fields terminated by ',' location '/user/cloudera/ddir';
+
+select * from ltab;
+
+select * from ltab where id > 1;
+
+quit;

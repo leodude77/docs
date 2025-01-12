@@ -1,0 +1,30 @@
+
+🔴 Cloudera Folks
+======================
+
+hadoop dfsadmin -safemode leave
+
+cd
+echo 1,zeyo,40 > zfile
+echo 2,ravi,70 >> zfile
+echo 3,rani,70 >> zfile
+
+hive        --> type and enter
+
+drop database if exists zdb cascade;
+
+create database if not exists zdb;
+
+use zdb;
+
+create table ztab(id int,name string,amt int) row format delimited fields terminated by ',';
+
+load data local inpath '/home/cloudera/zfile'  into table ztab;
+
+select * from ztab;
+
+select * from ztab where id>1;
+
+quit;
+
+hadoop    fs   -ls    /user/hive/warehouse/zdb.db/ztab
