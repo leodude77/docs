@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>Week 8 - Docs</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Week 8";
+        var mkdocs_page_input_path = "big_data\\week_8\\index.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+ <link href="../../assets/stylesheets/glightbox.min.css" rel="stylesheet"/><style>
+    html.glightbox-open { overflow: initial; height: 100%; }
+    .gslide-title { margin-top: 0px; user-select: text; }
+    .gslide-desc { color: #666; user-select: text; }
+    .gslide-image img { background: white; }</style> <script src="../../assets/javascripts/glightbox.min.js"></script></head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> Docs
+        </a>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">Home</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Big Data Batch 43</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../week_7/">Week 7</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Week 8</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#day-2">Day 2</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#sqoop-fetch-size">Sqoop fetch-size</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#hive-handson-basic-insert">Hive Handson (Basic insert)</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#hive-handson-no-location-specified">Hive Handson (No location specified)</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#hive-handson-specifying-location">Hive Handson (Specifying location)</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#task">Task</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#extra-notes">Extra notes</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">Docs</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Big Data Batch 43</li>
+      <li class="breadcrumb-item active">Week 8</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="welcome-to-week-8">Welcome to week 8</h1>
+<h2 id="day-2">Day 2</h2>
+<ul>
+<li>Date - 20250112</li>
+<li>Video - 14 serialized deep dive file formats parquet</li>
+</ul>
+<h3 id="sqoop-fetch-size">Sqoop fetch-size</h3>
+<p>By default sqoop imports records in batches of 1000, can have custom value depending on the usecase and resources available, used for performance tuning. (No one value fits all - trial &amp; error)</p>
+<h3 id="hive-handson-basic-insert">Hive Handson (Basic insert)</h3>
+<pre><code>hadoop dfsadmin -safemode leave
+</code></pre>
+<p>hive</p>
+<pre><code>create database odb;
+use odb;
+
+create table  otab(id int);
+insert into otab values(1000);
+select * from otab;
+
+quit;
+</code></pre>
+<pre><code>hadoop   fs   -ls   /user/hive/warehouse/
+hadoop   fs   -ls   /user/hive/warehouse/odb.db
+hadoop   fs   -ls   /user/hive/warehouse/odb.db/otab
+hadoop   fs   -cat  /user/hive/warehouse/odb.db/otab/000000_0
+</code></pre>
+<h3 id="hive-handson-no-location-specified">Hive Handson (No location specified)</h3>
+<pre><code>hadoop dfsadmin -safemode leave
+
+cd
+echo 1,zeyo,40 &gt; zfile
+echo 2,ravi,70 &gt;&gt; zfile
+echo 3,rani,70 &gt;&gt; zfile
+</code></pre>
+<p>hive</p>
+<pre><code>drop database if exists zdb cascade;
+
+create database if not exists zdb;
+use zdb;
+
+create table ztab(id int,name string,amt int) row format delimited fields terminated by ',';
+
+load data local inpath '/home/cloudera/zfile' into table ztab;
+
+select * from ztab;
+select * from ztab where id&gt;1;
+
+quit;
+</code></pre>
+<pre><code>hadoop    fs   -ls    /user/hive/warehouse/zdb.db/ztab
+</code></pre>
+<p>Alt: One liner for hive</p>
+<pre><code>hive -e &quot;drop database if exists odb cascade; create database if not exists odb; use odb; create table if not exists otab(id int); insert into otab values(2000); select * from otab;&quot;
+</code></pre>
+<h3 id="hive-handson-specifying-location">Hive Handson (Specifying location)</h3>
+<pre><code>hadoop dfsadmin -safemode leave
+
+cd
+echo 1,zeyo,40 &gt; zfile
+echo 2,ravi,70 &gt;&gt; zfile
+echo 3,rani,70 &gt;&gt; zfile
+
+hadoop  fs   -mkdir  /user/cloudera/ddir
+hadoop  fs   -put   /home/cloudera/zfile  /user/cloudera/ddir/
+</code></pre>
+<p>hive</p>
+<pre><code>drop database if exists ldb cascade;
+create database if not exists ldb;
+use ldb;
+
+create table ltab(id int,name string,amt int) row format delimited fields terminated by ',' location '/user/cloudera/ddir';
+
+select * from ltab;
+select * from ltab where id &gt; 1;
+</code></pre>
+<p>Alt: One liner for hive</p>
+<pre><code>hive -e &quot;drop database if exists ldb cascade; create database if not exists ldb; use ldb; create table ltab(id int,name string,amt int) row format delimited fields terminated by ',' location '/user/cloudera/ddir';select * from ltab;select * from ltab where id &gt; 1;&quot;
+</code></pre>
+<h3 id="task">Task</h3>
+<ul>
+<li>Execute above handson</li>
+</ul>
+<h3 id="extra-notes">Extra notes</h3>
+<ul>
+<li>Multiple tables can have same location specified during hive table creation</li>
+<li>Performance tuning for sqoop<ul>
+<li><a href="https://medium.com/swlh/performance-tuning-apache-sqoop-512242a58df5">https://medium.com/swlh/performance-tuning-apache-sqoop-512242a58df5</a></li>
+</ul>
+</li>
+</ul>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../week_7/" class="btn btn-neutral float-left" title="Week 7"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../week_7/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+<script id="init-glightbox">const lightbox = GLightbox({"touchNavigation": true, "loop": false, "zoomable": true, "draggable": true, "openEffect": "zoom", "closeEffect": "zoom", "slideEffect": "slide"});
+</script></body>
+</html>
