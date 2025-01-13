@@ -6,9 +6,24 @@ nav:
     - Week 8: 'big_data/week_8/index.md'
 
 markdown_extensions:
-  - pymdownx.magiclink
+  - pymdownx.highlight:
+        anchor_linenums: true
+        line_spans: __span
+        pygments_lang_class: true
+  - pymdownx.magiclink  
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
 
 plugins:
+  - search
   - glightbox
 
-theme: readthedocs
+theme: 
+  name: material
+  palette:
+    scheme: slate
+  features:
+    - content.code.copy
