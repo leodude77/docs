@@ -4,6 +4,9 @@ nav:
   - Big Data Batch 43: 
     - Week 7: 'big_data/week_7/index.md'
     - Week 8: 'big_data/week_8/index.md'
+    - Week 9: 'big_data/week_9/index.md'
+  - Self:
+    - Ruby: 'self/ruby.md'
 
 markdown_extensions:
   - pymdownx.highlight:
