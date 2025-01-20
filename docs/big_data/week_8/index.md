@@ -3,7 +3,7 @@
 ## Day 1
 * Date - 20250111
 * Video - 15 hive deep dive hive vs sql
-<iframe width="560" height="315" src="https://www.youtube.com/embed/PyZ1Gu8Pxk4?si=82CDyBJmrH-XWKqb" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/UHlaMUd1OFB4azQ/c2k9ODJDRHlCSm1ySC1YV0txYg==" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 ### Sqoop import all tables
 Importing all tables present in the same database
