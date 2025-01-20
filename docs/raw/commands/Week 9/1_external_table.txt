@@ -1,0 +1,64 @@
+
+
+hadoop dfsadmin -safemode leave
+cd
+echo 1,sai>zfile
+echo 2,vas>>zfile
+
+hadoop   fs    -mkdir     /user/cloudera/mdir
+hadoop   fs    -mkdir     /user/cloudera/edir
+
+hadoop   fs    -put    zfile   /user/cloudera/mdir
+hadoop   fs    -put    zfile   /user/cloudera/edir
+
+========================
+🔴 hive            ---> you type and go inside
+========================
+
+
+========================
+🔴 Database creation
+========================
+
+drop database if exists tabcheck cascade;
+create database if not exists tabcheck;
+use tabcheck;
+
+
+========================
+🔴 Both table creation
+========================
+
+create table mtab(id int,name string) row format delimited fields terminated by ',' location '/user/cloudera/mdir';
+
+create external table etab(id int,name string) row format delimited fields terminated by ',' location '/user/cloudera/edir';
+
+describe formatted mtab;
+
+describe formatted etab;
+
+========================
+🔴 Validate data
+========================
+
+
+select * from mtab;
+
+select * from etab;
+
+========================
+🔴 Drop tables
+========================
+
+
+drop table mtab;
+
+drop table etab;
+
+quit ;
+
+========================
+🔴 Validate in hive shell itself -- U WILL SEE edir but not mdir
+========================
+
+hadoop   fs   -ls   /user/cloudera/

@@ -1,0 +1,62 @@
+
+🔴Static Insert
+====================
+
+🔴Cloudera folks
+
+===== 
+🔴data creation 
+========
+
+hadoop dfsadmin -safemode leave
+
+
+cd
+echo 1,Sai,I,IND>allc
+echo 2,zeyo,I,IND>>allc
+echo 3,Hema,K,UK>>allc
+echo 4,Gomathi,K,UK>>allc
+echo 5,Jai,S,US>>allc
+echo 6,Swathi,S,US>>allc
+
+
+hadoop fs -rmr /user/cloudera/helpdir
+hadoop fs -mkdir /user/cloudera/helpdir
+hadoop fs -rmr /user/cloudera/sidir
+hadoop fs -mkdir /user/cloudera/sidir
+
+
+hive -- go inside
+
+======================
+🔴Create database and Source Table
+======================
+
+
+
+create database if not exists partdb;
+use partdb;
+drop table if exists helptab;
+create table helptab(id int,name string,chk string,country string) row format delimited fields terminated by ',' location '/user/cloudera/helpdir';
+
+==================================
+🔴Load data to helptab table
+==================================
+
+
+load data local inpath '/home/cloudera/allc' into table helptab;
+
+==================================
+🔴Target table for Statis Partition and insert the data
+==================================
+
+
+drop table if exists sitab;
+create table sitab(id int,name string,chk string) partitioned by (country string) row format delimited fields terminated by ',' location '/user/cloudera/sidir';
+
+insert into sitab partition(country='INDIA') select id,name,chk from helptab where country='IND';
+
+quit;
+
+hadoop fs -ls /user/cloudera/sidir
+hadoop fs -ls /user/cloudera/sidir/country=INDIA
