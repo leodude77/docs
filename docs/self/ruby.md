@@ -76,7 +76,7 @@ attr_accessor - (both getter and setter done auto, instance variable assigned)
 class_attribute (RoR specific) (Children do not inherit the value, ie changing at child object will not change the parent value)
 class_attribute :klass_atr
 
-modules are usally just specifying and using methods at varying levels in the app (basically sharing throughout)
+modules are usually just specifying and using methods at varying levels in the app (basically sharing throughout)
 
 self keyword used within a method, refers to the object which called the method
 self in a module is used to directly use the method without mixing it in(include, extend..)
@@ -102,4 +102,44 @@ end
 
 delayed jobs
 database.yml
-Sidekiq worker
+
+* Sidekiq used for background jobs, can use queues to prioritise certain jobs
+```
+class HighPriorityWorker
+  include Sidekiq::Worker
+  sidekiq_options queue: 'high_priority'
+  
+  def perform(image_id)
+    # Task for high-priority processing
+  end
+end
+
+Sidekiq.configure_server do |config|
+  config.redis = { url: 'redis://localhost:6379/0' }
+  config.average_scheduled_poll_interval = 1
+  config.options[:queues] = %w[default high_priority low_priority]
+end
+
+HighPriorityWorker.perform_async(image.id)
+```
+
+* Partials, named by a prefixed underscore, called by using render within a view
+* View is used to map data or whatever and then yielded within a layout which manages the structure of the page to be displayed https://guides.rubyonrails.org/layouts_and_rendering.html
+
+* Helpers(modules) are for reusing methods and mainly used in views
+Concern is a module which extends ActiveSupport::Concern mainly having two blocks, included (which adds variable and instance methods, also validations if needed) and class_methods(any method within this block is added as class method to the class including the concern)
+
+* Rails throttling of requests is done using Rack::Attack gem, configured under initializers directory, can add blocklists, throttling to certain endpoints(limit requests withing specified period). Uses redis cache to keep of requests from ips (in dev/local setup local cache)
+```
+Rack::Attack.throttle('limit logins per email', limit: 6, period: 60) do |req|
+  if req.path == '/login' && req.post?
+    # Normalize the email, using the same logic as your authentication process, to
+    # protect against rate limit bypasses.
+    req.params['email'].to_s.downcase.gsub(/\s+/, "")
+  end
+end
+```
+
+* include adds module methods as instance methods to the class including the module, adds to the ancestory chain after the self class. So lookup is done first on the class then module
+* prepend adds module methods as instance methods to the class including the module, adds to the ancestory chain before the self class. So lookup is done first on the module then class
+* extend adds module methods as class methods to the class extending the module
