@@ -42,7 +42,7 @@ Didnt solve for shit
     * Same token you can use for login later?
 * Difference between put and patch
 * Have you worked with background jobs? Follow up: Sidekiq
-* Solar 27:26
+* Solr 27:26
 * What is database indexing
 * I have huge database with millions of records, I have 6 columns, 5 of them are important(excluding id which is the 6th), can we improve performance by indexing all of them?
     * Is it good or bad? Indexing multiple columns

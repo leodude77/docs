@@ -1,0 +1,56 @@
+
+🔴 CLOUDERA FOLKS 🔴
+
+mysql -uroot -pcloudera
+create database if not exists dataa;
+use dataa;
+
+drop table if exists atab;
+create table atab(id int,name varchar(100),amount int);
+insert into atab values(1,'rajesh',40);
+insert into atab values(2,'vishnu',10);
+insert into atab values(3,'rani',60);
+select * from atab;
+
+quit;
+
+
+
+================================================
+🔴SQOOP Import🔴
+
+sqoop import --connect jdbc:mysql://localhost/dataa --username root --password cloudera --table atab --m 1  --delete-target-dir --target-dir /user/cloudera/adir --as-avrodatafile
+
+================================================
+🔴hive -- type and go inside🔴
+
+create database if not exists adb;
+use adb;
+drop table atab;
+create table atab(id int,name string,amount int) stored as avro location '/user/cloudera/adir';
+select * from atab;
+quit;
+
+=================================================
+🔴Mysql drop🔴
+
+mysql -uroot -pcloudera
+use dataa;
+alter table atab drop column name;
+insert into atab values(4,90);
+insert into atab values(5,20);
+select * from atab;
+
+quit;
+
+
+=================================================
+🔴Edge Node🔴
+
+sqoop import --connect jdbc:mysql://localhost/dataa --username root --password cloudera --table atab --m 1 --target-dir /user/cloudera/adir --as-avrodatafile --incremental append --check-column id --last-value 3
+
+=================================================
+
+🔴hive -- type and go inside🔴
+
+select * from adb.atab;
