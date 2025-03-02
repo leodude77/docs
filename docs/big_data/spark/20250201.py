@@ -1,0 +1,294 @@
+# ======================================================================================
+import os
+from pyspark import SparkConf, SparkContext
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import *
+from pyspark.sql.types import StructType, StructField, StringType, IntegerType, DateType, DoubleType, FloatType, \
+    TimestampType
+import sys
+
+python_path = sys.executable
+os.environ['PYSPARK_PYTHON'] = python_path
+os.environ['HADOOP_HOME'] = r'C:\Code\docs\docs\big_data\spark\hadoop'
+os.environ['JAVA_HOME'] = r'C:\Program Files\Java\jdk1.8.0_202'
+######################################################
+
+# os.environ['PYSPARK_SUBMIT_ARGS'] = '--packages com.datastax.spark:spark-cassandra-connector_2.12:3.5.1 pyspark-shell'
+# os.environ['PYSPARK_SUBMIT_ARGS'] = '--packages org.apache.spark:spark-avro_2.12:3.5.4 pyspark-shell'
+# os.environ['PYSPARK_SUBMIT_ARGS'] = '--packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.4 pyspark-shell'
+
+
+conf = SparkConf().setAppName("pyspark").setMaster("local[*]").set("spark.driver.host", "localhost").set(
+    "spark.default.parallelism", "1")
+sc = SparkContext(conf=conf)
+
+spark = SparkSession.builder.getOrCreate()
+
+##################🔴🔴🔴🔴🔴🔴 -> DONT TOUCH ABOVE CODE -- TYPE BELOW ####################################
+
+# manual_schema = StructType([
+#     StructField("id", IntegerType(), True),
+#     StructField("tdate", StringType(), True),
+#     StructField("amount", DoubleType(), True),
+#     StructField("category", StringType(), True),
+#     StructField("product", StringType(), True),
+#     StructField("spendby", StringType(), True)
+# ])
+
+
+# df = spark.read.format("json").load("file4.json").write.mode("overwrite").bucketBy(10, "custno").format("csv").saveAsTable("csv_write_partition_bucketing")
+# .write.mode("overwrite").options(path="./parquet_write_partition").partitionBy("state").save()
+
+# df = df.withColumn('results', explode(df.results))
+
+# manual_schema = "id INT, tdate STRING, amount DOUBLE, category STRING, product STRING, spendby STRING"
+# data = [
+#     (1, '05-26-2011', 200.0, 'Exercise Band', 'Weightlifting', 'credit'),
+#     (2, '06-01-2011', 300.4, 'Exercise', 'Gymnastics Pro', 'cash'),
+#     (3, '06-05-2011', 100.0, 'Gymnastics', 'Rings', 'credit'),
+#     (4, '12-17-2011', 300.0, 'Team Sports', 'Field', 'cash'),
+#     (5, '02-14-2011', 200.0, 'Gymnastics', "", 'cash'),
+#     (6, '06-05-2011', 100.0, 'Exercise', 'Rings', 'credit'),
+#     (7, '12-17-2011', 300.0, 'Team Sports', 'Field', 'cash'),
+#     (8, '02-14-2011', 200.0, 'Gymnastics', "", 'cash')
+# ]
+# df = spark.createDataFrame(data, manual_schema).createTempView("checker")
+
+# print (df.count())
+# df.printSchema()
+# df.show(truncate=False)
+
+# resulting_df = df.select(df['amount'])
+# resulting_df.show(truncate=False)
+
+# result = spark.sql("""
+#           select * from checker
+#           """)
+
+# result.show()
+# print(result.rdd.getNumPartitions())
+
+#--------------------------------------------------------------------------------------------------------------
+# data = sc.textFile("usdata.csv")
+# (data
+#  .filter(lambda x: len(x) > 200)
+#  .flatMap(lambda x: x.split(","))
+#  .map(lambda x: ("zeyo " + x.replace("-", "")))
+#  .saveAsTextFile("outputCheck.txt"))
+
+# schema = "tno string, tdate string, amount double, category string, product string, mode string"
+# data1 = spark.read.schema(schema).format("csv").load("dt.txt")
+# data1.filter(data1.product.contains("Gymnastics")).write.mode("overwrite").save('outputParquet')
+#
+# spark.read.load("outputParquet").show()
+
+#--------------------------------------------------------------------------------------------------------------
+
+# from collections import namedtuple
+# manCols = namedtuple("columns",["tno", "tdate", "amount", "category", "product", "mode"])
+#
+# sc.textFile("dt.txt").map(lambda x: x.split(",")).map(lambda x: manCols(x[0], x[1], x[2], x[3], x[4], x[5]))\
+#     .filter(lambda x: "Gymnastics" in x.product).foreach(print)
+
+#--------------------------------------------------------------------------------------------------------------
+# listr = ["hadoop~hive~spark~sqoop"]
+#
+# rddr = sc.parallelize(listr)
+#
+# rddr.flatMap(lambda x: x.split("~")).map(lambda x: ("Tech->" + x.upper() + " Trainer->Sai")).foreach(print)
+
+#--------------------------------------------------------------------------------------------------------------
+
+# from collections import namedtuple
+# manCols = namedtuple("columns",["tno", "tdate", "amount", "category", "product", "mode"])
+# #
+# sc.textFile("dt.txt").map(lambda x: x.split(",")).map(lambda x: manCols(x[0], x[1], x[2], x[3], x[4], x[5])) \
+#     .filter(lambda x: "Gymnastics" in x.product).toDF().write.save("2025Parquetwrite")
+
+# spark.read.load("2025Parquetwrite").show()
+
+#--------------------------------------------------------------------------------------------------------------
+
+# csvdf = spark.read.format("csv").option("header","true").load("usdata.csv")
+# print()
+# print("======== CSV DF==============")
+# print()
+# # csvdf.show()
+#
+# csvdf.createOrReplaceTempView("temp")
+# spark.sql("select * from temp where age > 20").show()
+
+#--------------------------------------------------------------------------------------------------------------
+## SQL PRACTICE
+
+
+
+#####SQL PRE CODE#####
+
+data = [
+    (0, "06-26-2011", 300.4, "Exercise", "GymnasticsPro", "cash"),
+    (1, "05-26-2011", 200.0, "Exercise Band", "Weightlifting", "credit"),
+    (2, "06-01-2011", 300.4, "Exercise", "Gymnastics Pro", "cash"),
+    (3, "06-05-2011", 100.0, "Gymnastics", "Rings", "credit"),
+    (4, "12-17-2011", 300.0, "Team Sports", "Field", "cash"),
+    (5, "02-14-2011", 200.0, "Gymnastics", None, "cash"),
+    (6, "06-05-2011", 100.0, "Exercise", "Rings", "credit"),
+    (7, "12-17-2011", 300.0, "Team Sports", "Field", "cash"),
+    (8, "02-14-2011", 200.0, "Gymnastics", None, "cash"),
+    # (9, "06-12-2011", 200.0, "  Exercise   ", None, "credit")
+]
+
+df = spark.createDataFrame(data, ["id", "tdate", "amount", "category", "product", "spendby"])
+
+
+# data2 = [
+#     (4, "12-17-2011", 300.0, "Team Sports", "Field", "cash"),
+#     (5, "02-14-2011", 200.0, "Gymnastics", None, "cash"),
+#     (6, "02-14-2011", 200.0, "Winter", None, "cash"),
+#     (7, "02-14-2011", 200.0, "Winter", None, "cash")
+# ]
+#
+# df1 = spark.createDataFrame(data2, ["id", "tdate", "amount", "category", "product", "spendby"])
+#
+#
+data4 = [
+    (1, "raj"),
+    (2, "ravi"),
+    (3, "sai"),
+    (5, "rani")
+]
+
+cust = spark.createDataFrame(data4, ["id", "name"])
+
+
+data3 = [
+    (1, "mouse"),
+    (3, "mobile"),
+    (7, "laptop")
+]
+
+prod = spark.createDataFrame(data3, ["id", "product"])
+
+# df.show()
+# df1.show()
+# cust.show()
+# prod.show()
+
+# df.createOrReplaceTempView("df")
+# df1.createOrReplaceTempView("df1")
+# cust.createOrReplaceTempView("cust")
+# prod.createOrReplaceTempView("prod")
+
+
+# spark.sql("select id,tname from df").show()
+# spark.sql("select * from df where category='Exercise'").show()
+# spark.sql("select id,tdate,category,spendby from df where category='Exercise' and spendby='cash'").show()
+# spark.sql("select id,tdate,category,spendby from df where category IN ('Exercise','Gymnastics')").show()
+# spark.sql("select * from df where product LIKE '%Gymnastics%'").show()
+# spark.sql("select * from df where category <> 'Exercise'").show()
+# spark.sql("select * from df where category NOT IN ('Exercise','Gymnastics')").show()
+# spark.sql("select * from df where product IS null").show()
+# spark.sql("select * from df where product is not null").show()
+# spark.sql("select max(id), min(id) from df").show()
+# spark.sql("select count(1) from df").show()
+
+# spark.sql("select *, case when spendby='cash' then 1 when spendby='somethingelse' then 2 else 0 end as status from df").show()
+# spark.sql("select *, CONCAT(id,'-',category) as condata from df").show()
+# spark.sql("select *, CONCAT_WS('-',id,category,product) as condata from df").show()
+# spark.sql("select category, lower(category), upper(category) from df").show()
+# spark.sql("select amount, CEIL(amount), ROUND(amount) from df").show()
+# spark.sql("select product, COALESCE(product, 'NA') from df").show()
+# spark.sql("select category, TRIM(category) from df").show()
+# spark.sql("select distinct category,spendby from df").show()
+# spark.sql("select category, substr(category, 0, 6) from df").show()
+# spark.sql("select product, split(product, ' ')[1] from df").show()
+# spark.sql("select product, split(product, ' ')[1] from df").show()
+
+# spark.sql("select * from df union select * from df1").show()
+# spark.sql("select category, spendby, sum(amount), count(1), max(amount) from (select * from df union select * from df1) group by spendby, category").show()
+
+# spark.sql("select category, amount, ROW_NUMBER() OVER(partition by category order by amount desc) as row_number from df").show()
+# spark.sql("select category, amount, lead(amount, 2, 'N/A') OVER(partition by category order by amount desc) from df").show()
+
+# spark.sql("select category, count(1) from df group by category having count(1)>1").show()
+
+# spark.sql("select a.id, name, product from cust a inner join prod b on a.id=b.id").show()
+# spark.sql("select * from cust a full join prod b on a.id=b.id").show()
+# spark.sql("select * from cust a left anti join prod b on a.id=b.id").show()
+
+# import time
+# time.sleep(300)
+
+#--------------------------------------------------------------------------------------------------------------
+
+# df.select("id","tdate").show()
+# df.drop("id","tdate").show()
+#
+# df.filter("category='Exercise' and spendby='cash'").show()
+# df.filter("category='Exercise' or spendby='cash'").show()
+# df.filter("product LIKE '%Gymnastics%'").show()
+# df.filter("category IN ('Exercise','Gymnastics')").show()
+# df.filter("product IS NULL").show()
+# df.filter("product IS NOT NULL").show()
+#
+# df.filter(" category <> 'Exercise' ").show()
+
+# df.selectExpr("concat(product, '~zeyo')",
+#               "upper(category)","cast(id as int)",
+#               "split(tdate, '-')[2] as year",
+#               "case when spendby='cash' then 0 else 1 end as status",
+#               "to_date(tdate,'dd-mm-yyyy')",
+#               "year(to_date(tdate,'dd-mm-yyyy')) as Year"
+#               ).show()
+#
+# df.printSchema()
+
+#--------------------------------------------------------------------------------------------------------------
+# 20250301
+# df.show()
+
+# (df
+    # .withColumn("id", expr("cast(id as int)"))
+#     .withColumn("id", df.id.cast("string"))
+#     .withColumn("amount", expr("amount+1000"))
+#     .withColumn("category", expr("upper(category)"))
+    # .withColumn("product", expr("concat(product, '~zeyo')"))
+#     .withColumn("product", concat(df.product, lit('~zryo')))
+    # .withColumn("tdate", expr("year(to_date(tdate, 'dd-mm-yyyy'))"))
+#     .withColumn("tdate", year(to_date(df.tdate, "dd-mm-yyyy")))
+#     .withColumn("status", expr("case when spendby == 'cash' then 1 else 0 end"))
+    # .withColumn("status", when(df.spendby == 'cash', 1).otherwise(0))
+#     .withColumnRenamed("tdate", "year")
+#     .show()
+# )
+
+cust.join(prod, ["id"], "inner").show()
+cust.join(prod, ["id"], "outer").show()
+cust.join(prod, ["id"], "left").show()
+cust.join(prod, ["id"], "right").show()
+cust.join(prod, cust.id == prod.id).select(cust.id).show()
+
+# data5 = [
+#     (1, "A")
+#     (2, "B"),
+#     (3, "C"),
+#     (4, "A")
+# ]
+#
+# tab1 = spark.createDataFrame(data5, ["id", "name"])
+#
+# data6 = [
+#     (1, "A"),
+#     (2, "B"),
+#     (4, "X"),
+#     (5, "F")
+# ]
+#
+# tab2 = spark.createDataFrame(data6, ["id", "name1"])
+#
+# (tab1.join(tab2, ["id"], "outer").withColumn("status", expr("case when name == name1 then null when name is null then 'New in target' when name1 is null then 'New in source' else 'Mismatch' end"))
+#  .where("status is not null").select("id", "status")
+#  .show())
+
+#--------------------------------------------------------------------------------------------------------------
+# 20250302
