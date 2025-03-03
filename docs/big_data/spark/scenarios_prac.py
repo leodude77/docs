@@ -813,3 +813,81 @@ spark = SparkSession.builder.getOrCreate()
 
 # df.withColumn("prevyear_sal", lag("salary").over(Window.partitionBy("empid").orderBy("year")))\
 #   .withColumn("incresalary", expr("(salary-prevyear_sal)")).na.fill({'incresalary': 0, 'prevyear_sal': 'Some_random_val'}).show()
+
+# =======================================================================================================================
+# Scenario 26
+# =======================================================================================================================
+
+# +---+----+            +---+-----+
+# | id|name|            |id1|name1|
+# +---+----+            +---+-----+
+# |  1|   A|            |  1|    A|
+# |  2|   B|            |  2|    B|
+# |  3|   C|            |  4|    X|
+# |  4|   D|            |  5|    F|
+# +---+----+            +---+-----+
+
+#      =>>     +---+-------------+
+#              | id|      comment|
+#              +---+-------------+
+#              |  3|new in source|
+#              |  4|     mismatch|
+#              |  5|new in target|
+#              +---+-------------+
+
+# MYSQL ---------------------------------------------------------------------------------------------------------------------------
+
+# cur.execute("DROP TABLE IF EXISTS df_26;")
+# cur.execute("CREATE TABLE df_26 (id varchar(100), name varchar(100));")
+# cur.execute("INSERT INTO df_26 VALUES \
+#     ('1', 'A'), \
+#     ('2', 'B'), \
+#     ('3', 'C'), \
+#     ('4', 'D');")
+
+# cur.execute("DROP TABLE IF EXISTS df_26_1;")
+# cur.execute("CREATE TABLE df_26_1 (id1 varchar(100), name1 varchar(100));")
+# cur.execute("INSERT INTO df_26_1 VALUES \
+#     ('1', 'A'), \
+#     ('2', 'B'), \
+#     ('4', 'X'), \
+#     ('5', 'F');")
+# con.commit()
+
+# cur.execute("""
+#               select COALESCE(id, id1) as id, comment from
+#               (
+#                 select *, 'New in source' as comment from df_26 left join df_26_1 on id=id1 where id1 is null union
+#                 select *, 'New in target' as comment from df_26 right join df_26_1 on id=id1 where id is null union
+#                 select *, 'Mismatched' as comment from df_26 inner join df_26_1 on id=id1 where name <> name1
+#               ) as e
+#             """)
+
+# mysql_print()
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = (
+#     ("1", "A"),
+#     ("2", "B"),
+#     ("3", "C"),
+#     ("4", "D")
+# )
+# schema = "id string, name string"
+
+# df1 = spark.createDataFrame(data=data, schema=schema)
+# df1.createOrReplaceTempView("df1")
+
+# data = (
+#     ("1", "A"),
+#     ("2", "B"),
+#     ("4", "X"),
+#     ("5", "F")
+# )
+# schema = "id1 string, name1 string"
+
+# df2 = spark.createDataFrame(data=data, schema=schema)
+# df2.createOrReplaceTempView("df2")
+
+# df1.join(df2, df1.id == df2.id1, "full").withColumn("comment", expr("case when id is null then 'New in source' when id1 is null then 'New in target' when name!=name1 then 'Mismatched' end"))\
+#   .filter("comment is not null").withColumn("id", expr("coalesce(id, id1)")).select("id", "comment").show()
