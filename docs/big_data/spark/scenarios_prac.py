@@ -517,3 +517,95 @@ spark = SparkSession.builder.getOrCreate()
 
 # df.show()
 # df.withColumn("col", expr("explode(split(concat_ws('-',*), '-'))")).select("col").show()
+
+# =======================================================================================================================
+# Scenario 30
+# =======================================================================================================================
+
+# +------+----+-------+-------+               +--------+---------+
+# |emp_id|name|dept_id| salary|               |dept_id1|dept_name|
+# +------+----+-------+-------+               +--------+---------+
+# |     1|   A|      A|1000000|               |       A|    AZURE|
+# |     2|   B|      A|2500000|               |       G|      GCP|
+# |     3|   C|      G| 500000|               |       W|      AWS|
+# |     4|   D|      G| 800000|               +--------+---------+
+# |     5|   E|      W|9000000|
+# |     6|   F|      W|2000000|
+# +------+----+-------+-------+
+
+#      =>>     +------+----+---------+-------+
+#              |emp_id|name|dept_name| salary|
+#              +------+----+---------+-------+
+#              |     1|   A|    AZURE|1000000|
+#              |     6|   F|      AWS|2000000|
+#              |     3|   C|      GCP| 500000|
+#              +------+----+---------+-------+
+
+# MYSQL ---------------------------------------------------------------------------------------------------------------------------
+
+# cur.execute("DROP TABLE IF EXISTS df_30;")
+# cur.execute("CREATE TABLE df_30 (emp_id varchar(100), name varchar(100), dept_id varchar(100), salary varchar(100));")
+# cur.execute("INSERT INTO df_30 VALUES \
+#     ('1', 'A', 'A', '1000000'), \
+#     ('2', 'B', 'A', '2500000'), \
+#     ('3', 'C', 'G', '500000'), \
+#     ('4', 'D', 'G', '800000'), \
+#     ('5', 'E', 'W', '9000000'), \
+#     ('6', 'F', 'W', '2000000');")
+
+# cur.execute("DROP TABLE IF EXISTS df_30_1;")
+# cur.execute("CREATE TABLE df_30_1 (dept_id1 varchar(10), dept_name varchar(100));")
+# cur.execute("INSERT INTO df_30_1 VALUES \
+#     ('A', 'AZURE'), \
+#     ('G', 'GCP'), \
+#     ('W', 'AWS');")
+
+# con.commit()
+
+# cur.execute("""
+#             select emp_id, name, dept_name, salary from
+#             (select *, RANK() over (partition by dept_id order by salary desc) as sal_rank from df_30) as rank_table
+#             inner join df_30_1 on dept_id = dept_id1
+#             where sal_rank = 2
+#             """)
+# mysql_print()
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = (
+#     ("1", "A", "A", "1000000"),
+#     ("2", "B", "A", "2500000"),
+#     ("3", "C", "G", "500000"),
+#     ("4", "D", "G", "800000"),
+#     ("5", "E", "W", "9000000"),
+#     ("6", "F", "W", "2000000")
+# )
+# schema = "emp_id string, name string, dept_id string, salary string"
+
+# df1 = spark.createDataFrame(data=data, schema=schema)
+# df1.createOrReplaceTempView("df1")
+
+# data = (
+#     ("A", "AZURE"),
+#     ("G", "GCP"),
+#     ("W", "AWS")
+# )
+# schema = "dept_id1 string, dept_name string"
+
+# df2 = spark.createDataFrame(data=data, schema=schema)    
+# df2.createOrReplaceTempView("df2")
+
+# df1.withColumn("sal_rank", rank().over(Window.partitionBy(col("dept_id")).orderBy(col("salary").desc()))).filter("sal_rank = 2")\
+#   .join(df2, df1.dept_id == df2.dept_id1).select(df1.emp_id, df1.name, df2.dept_name, df1.salary).show()
+  
+# spark.sql("""
+#           select emp_id, name, dept_name, salary from
+#               (
+#                 select * from
+#                 (
+#                   (select *, RANK() over (partition by dept_id order by salary desc) as sal_rank from df1) as rank_table
+#                 ) where sal_rank = 2
+#               ) as rank_table1
+#              inner join df2 on dept_id = dept_id1
+#           """).show()
+
