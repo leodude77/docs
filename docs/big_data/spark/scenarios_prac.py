@@ -60,7 +60,7 @@ spark = SparkSession.builder.getOrCreate()
 # | sell_date|   product|            ==>>            +----------+--------------------+---------+
 # +----------+----------+                            | sell_date|            products|null_sell|
 
-# SQLITE ---------------------------------------------------------------------------------------------------------------------------
+# MYSQL ---------------------------------------------------------------------------------------------------------------------------
 
 # cur.execute("DROP TABLE IF EXISTS df_36;")
 # cur.execute("CREATE TABLE df_36 (sell_date string, product string);")
@@ -359,30 +359,30 @@ spark = SparkSession.builder.getOrCreate()
 #              |      7|      Fish Birayani|     4|           ****|
 #              +-------+-------------------+------+---------------+
 
-# SQLITE ---------------------------------------------------------------------------------------------------------------------------
+# MYSQL ---------------------------------------------------------------------------------------------------------------------------
 
-cur.execute("DROP TABLE IF EXISTS df_32;")
-cur.execute("CREATE TABLE df_32 (food_id int, food_item varchar(100))")
-cur.execute("INSERT INTO df_32 VALUES \
-    (1, 'Veg Biryani'), \
-    (2, 'Veg Fried Rice'), \
-    (3, 'Kaju Fried Rice'), \
-    (4, 'Chicken Biryani'), \
-    (5, 'Chicken Dum Biryani'), \
-    (6, 'Prawns Biryani'), \
-    (7, 'Fish Birayani');")
+# cur.execute("DROP TABLE IF EXISTS df_32;")
+# cur.execute("CREATE TABLE df_32 (food_id int, food_item varchar(100))")
+# cur.execute("INSERT INTO df_32 VALUES \
+#     (1, 'Veg Biryani'), \
+#     (2, 'Veg Fried Rice'), \
+#     (3, 'Kaju Fried Rice'), \
+#     (4, 'Chicken Biryani'), \
+#     (5, 'Chicken Dum Biryani'), \
+#     (6, 'Prawns Biryani'), \
+#     (7, 'Fish Birayani');")
 
-cur.execute("DROP TABLE IF EXISTS df_32_1;")
-cur.execute("CREATE TABLE df_32_1 (food_id int, rating int);")
-cur.execute("INSERT INTO df_32_1 VALUES \
-    (1, 5), \
-    (2, 3), \
-    (3, 4), \
-    (4, 4), \
-    (5, 5), \
-    (6, 4), \
-    (7, 4);")
-con.commit()
+# cur.execute("DROP TABLE IF EXISTS df_32_1;")
+# cur.execute("CREATE TABLE df_32_1 (food_id int, rating int);")
+# cur.execute("INSERT INTO df_32_1 VALUES \
+#     (1, 5), \
+#     (2, 3), \
+#     (3, 4), \
+#     (4, 4), \
+#     (5, 5), \
+#     (6, 4), \
+#     (7, 4);")
+# con.commit()
 
 # cur.execute(""" 
 #               select a.food_id, food_item, rating, repeat('*', rating) as stars 
@@ -434,3 +434,86 @@ con.commit()
 # df2.createOrReplaceTempView("df2")
 
 # df1.join(df2, ["food_id"]).withColumn("stars", expr("repeat('*', rating)")).show()
+
+# =======================================================================================================================
+# Second highest salary
+# =======================================================================================================================
+
+# cur.execute("DROP TABLE IF EXISTS employee;")
+# cur.execute("CREATE TABLE employee (id int, name varchar(100));")
+# cur.execute("""INSERT INTO employee VALUES 
+#     (1, 'NAME1'),
+#     (2, 'NAME2'),
+#     (3, 'NAME3'),
+#     (4, 'NAME4');""")
+
+# cur.execute("DROP TABLE IF EXISTS salaries;")
+# cur.execute("CREATE TABLE salaries (id int, employee_id int, salary bigint);")
+# cur.execute("""
+#             INSERT INTO salaries VALUES 
+#             (1, 4, 6600001),
+#             (2, 2, 12600001),
+#             (3, 3, 5600001),
+#             (4, 1, 8600001);
+#     """)
+# con.commit()
+
+# cur.execute("""
+#             select id, name, salary from (
+#               select e.id, name, salary, RANK() over (order by salary desc) as sal_rank from employee as e inner join salaries as s on e.id = s.employee_id
+#             ) as rank_table where sal_rank = 4
+#             """)
+# cur.execute("""
+#             select id, name from employee where id in (
+#                 select * from
+#                 (
+#                 select employee_id from salaries order by salary desc limit 1
+#                 ) as second
+#               )
+#             """)
+# mysql_print()
+
+# =======================================================================================================================
+# Scenario 31
+# =======================================================================================================================
+
+# +----+-----+--------+-----------+     =>>     +-----------+
+# |col1| col2|    col3|       col4|             |        col|
+# +----+-----+--------+-----------+             +-----------+
+# |  m1|m1,m2|m1,m2,m3|m1,m2,m3,m4|             |         m1|
+# +----+-----+--------+-----------+             |      m1,m2|
+#                                               |   m1,m2,m3|
+#                                               |m1,m2,m3,m4|
+#                                               |           |
+#                                               +-----------+
+
+# MYSQL ---------------------------------------------------------------------------------------------------------------------------
+
+# cur.execute("DROP TABLE IF EXISTS df_31;")
+# cur.execute("CREATE TABLE df_31 (col1 varchar(100), col2 varchar(100), col3 varchar(100), col4 varchar(100));")
+# cur.execute("INSERT INTO df_31 VALUES \
+#     ('m1', 'm1,m2', 'm1,m2,m3', 'm1,m2,m3,m4');")
+
+# con.commit()
+
+# cur.execute("""
+#             SELECT col1 as col from df_31 union
+#             SELECT col2 as col from df_31 union
+#             SELECT col3 as col from df_31 union
+#             SELECT col4 as col from df_31
+#             """)
+# mysql_print()
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = (
+#     ("m1", "m1,m2", "m1,m2,m3", "m1,m2,m3,m4"),
+#     ("s1", "s1,s2", "s1,s2,s3", "s1,s2,s3,s4")
+# )
+# schema = "col1 string, col2 string, col3 string, col4 string"
+
+# df = spark.createDataFrame(data=data, schema=schema)
+# df.createOrReplaceTempView("df")
+
+# df.show()
+# df.withColumn("col", expr("explode(split(concat_ws('-',*), '-'))")).select("col").show()
