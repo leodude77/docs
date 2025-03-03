@@ -70,8 +70,9 @@ spark = SparkSession.builder.getOrCreate()
 
 # con.commit()
 
-# print_sqlite_table("\
-# ")
+# cur.execute("""
+#             """)
+# mysql_print()
 
 # SPARK ---------------------------------------------------------------------------------------------------------------------------
 
@@ -744,3 +745,71 @@ spark = SparkSession.builder.getOrCreate()
 # df.alias('a').join(df.alias('b'), col("a.parent") == col("b.child"))\
 #   .drop(col("b.child")).selectExpr("child", "a.parent", "b.parent as Grandparent").show()
   
+# =======================================================================================================================
+# Scenario 27
+# =======================================================================================================================
+
+# +-----+------+----+     =>>     +-----+------+----+-----------+
+# |empid|salary|year|             |empid|salary|year|incresalary|
+# +-----+------+----+             +-----+------+----+-----------+
+# |    1| 60000|2018|             |    1| 60000|2018|          0|
+# |    1| 70000|2019|             |    1| 70000|2019|      10000|
+# |    1| 80000|2020|             |    1| 80000|2020|      10000|
+# |    2| 60000|2018|             |    2| 60000|2018|          0|
+# |    2| 65000|2019|             |    2| 65000|2019|       5000|
+# |    2| 65000|2020|             |    2| 65000|2020|          0|
+# |    3| 60000|2018|             |    3| 60000|2018|          0|
+# |    3| 65000|2019|             |    3| 65000|2019|       5000|
+# +-----+------+----+             +-----+------+----+-----------+
+
+# MYSQL ---------------------------------------------------------------------------------------------------------------------------
+
+# cur.execute("DROP TABLE IF EXISTS df_28;")
+# cur.execute("CREATE TABLE df_28 (empid varchar(100), salary varchar(100), year varchar(100));")
+# cur.execute("INSERT INTO df_28 VALUES \
+#     ('1', '60000', '2018'), \
+#     ('1', '70000', '2019'), \
+#     ('1', '80000', '2020'), \
+#     ('2', '60000', '2018'), \
+#     ('2', '65000', '2019'), \
+#     ('2', '65000', '2020'), \
+#     ('3', '60000', '2018'), \
+#     ('3', '65000', '2019');")
+# con.commit()
+
+# cur.execute("""
+#             select empid, salary, year, (salary - prev_year_sal) as incresalary from
+#               ( select *, LAG(salary, 1, salary) OVER (partition by empid order by year) as prev_year_sal from df_28 ) as e
+#             """)
+
+# cur.execute("""
+#               select empid, salary, year, COALESCE((salary - prev_year_sal), 0) as incresalary from 
+#                 (
+#                   select *, LAG(salary) OVER (partition by empid order by year) as prev_year_sal from df_28
+#                 ) as e
+#             """)
+# mysql_print()
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = (
+#     ("1", "60000", "2018"),
+#     ("1", "70000", "2019"),
+#     ("1", "80000", "2020"),
+#     ("2", "60000", "2018"),
+#     ("2", "65000", "2019"),
+#     ("2", "65000", "2020"),
+#     ("3", "60000", "2018"),
+#     ("3", "65000", "2019")
+# )
+# schema = "empid string, salary string, year string"
+
+# df = spark.createDataFrame(data=data, schema=schema)
+# df.createOrReplaceTempView("df")
+
+# df.withColumn("prevyear_sal", lag("salary", 1, 0).over(Window.partitionBy("empid").orderBy("year")))\
+#   .withColumn("incresalary", expr("case when prevyear_sal = 0 then 0 else (salary-prevyear_sal) end"))\
+#   .drop("prevyear_sal").show()
+
+# df.withColumn("prevyear_sal", lag("salary").over(Window.partitionBy("empid").orderBy("year")))\
+#   .withColumn("incresalary", expr("(salary-prevyear_sal)")).na.fill({'incresalary': 0, 'prevyear_sal': 'Some_random_val'}).show()
