@@ -262,33 +262,90 @@ prod = spark.createDataFrame(data3, ["id", "product"])
 #     .show()
 # )
 
-cust.join(prod, ["id"], "inner").show()
-cust.join(prod, ["id"], "outer").show()
-cust.join(prod, ["id"], "left").show()
-cust.join(prod, ["id"], "right").show()
-cust.join(prod, cust.id == prod.id).select(cust.id).show()
+# cust.join(prod, ["id"], "inner").show()
+# cust.join(prod, ["id"], "outer").show()
+# cust.join(prod, ["id"], "left").show()
+# cust.join(prod, ["id"], "right").show()
+# cust.join(prod, cust.id == prod.id).select(cust.id).show()
 
 # data5 = [
-#     (1, "A")
+#     (1, "A"),
 #     (2, "B"),
 #     (3, "C"),
 #     (4, "A")
 # ]
-#
+
 # tab1 = spark.createDataFrame(data5, ["id", "name"])
-#
+
 # data6 = [
 #     (1, "A"),
 #     (2, "B"),
 #     (4, "X"),
 #     (5, "F")
 # ]
-#
+
 # tab2 = spark.createDataFrame(data6, ["id", "name1"])
-#
+
 # (tab1.join(tab2, ["id"], "outer").withColumn("status", expr("case when name == name1 then null when name is null then 'New in target' when name1 is null then 'New in source' else 'Mismatch' end"))
 #  .where("status is not null").select("id", "status")
 #  .show())
 
 #--------------------------------------------------------------------------------------------------------------
 # 20250302
+
+# data5 = [
+#     (1, "S1"),
+#     (2, "S2"),
+#     (3, "S3"),
+#     (5, "S4")
+# ]
+
+# tab1 = spark.createDataFrame(data5, ["id", "name"])
+
+# data6 = [
+#     (1, "Mouse"),
+#     (3, "Mobile"),
+#     (7, "Laptop")
+# ]
+
+# tab2 = spark.createDataFrame(data6, ["id1", "accessory"])
+
+# (tab1.join(tab2, tab1.id == tab2.id1, "outer").withColumn("id", expr("case when id is null then id1 else id end"))
+#  .show())
+
+# tab1.join(tab2, tab1.id == tab2.id1, "outer").createOrReplaceTempView("tab3")
+# spark.sql("update tab3 set id = id1 where id is null").show()
+
+# -----------------------------------------------------------------------------------------------------------------
+# data5 = [
+#     ("A", "AA"),
+#     ("B", "BB"),
+#     ("C", "CC"),
+#     ("AA", "AAA"),
+#     ("BB", "BBB"),
+#     ("CC", "CCC")
+# ]
+
+# tab1 = spark.createDataFrame(data5, ["child", "parent"])
+
+# tab1.alias("df1").join(tab1.alias("df2"), col("df1.child") == col("df2.parent")).drop(col("df1.child")).show()
+
+# -----------------------------------------------------------------------------------------------------------------
+data5 = [
+    (1, "Sai"),
+    (2, "Ravi"),
+    (3, "Ranni"),
+    (5, "Radhan")
+]
+
+tab1 = spark.createDataFrame(data5, ["id", "name"])
+
+data6 = [
+    (1, "Mouse"),
+    (3, "Mobile"),
+    (7, "Laptop")
+]
+
+tab2 = spark.createDataFrame(data6, ["id", "accessory"])
+
+(tab1.join(tab2, ["id"], "anti").show())
