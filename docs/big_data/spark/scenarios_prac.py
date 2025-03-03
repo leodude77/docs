@@ -691,3 +691,56 @@ spark = SparkSession.builder.getOrCreate()
 
 # maxSalary = df1.selectExpr("max(col)").first()[0]
 # df1.join(df2, df1.col == df2.col1, "outer").drop("col").withColumnRenamed("col1","col").filter(~col("col").isin(maxSalary)).show()
+
+# =======================================================================================================================
+# Scenario 28
+# =======================================================================================================================
+
+# +-----+------+
+# |child|parent|     =>>     +-----+------+-----------+
+# +-----+------+             |child|parent|grandparent|
+# |    A|    AA|             +-----+------+-----------+
+# |    B|    BB|             |    A|    AA|        AAA|
+# |    C|    CC|             |    C|    CC|        CCC|
+# |   AA|   AAA|             |    B|    BB|        BBB|
+# |   BB|   BBB|             +-----+------+-----------+
+# |   CC|   CCC|
+# +-----+------+
+
+# MYSQL ---------------------------------------------------------------------------------------------------------------------------
+
+# cur.execute("DROP TABLE IF EXISTS df_28;")
+# cur.execute("CREATE TABLE df_28 (child varchar(100), parent varchar(100));")
+# cur.execute("INSERT INTO df_28 VALUES \
+#     ('A', 'AA'), \
+#     ('B', 'BB'), \
+#     ('C', 'CC'), \
+#     ('AA', 'AAA'), \
+#     ('BB', 'BBB'), \
+#     ('CC', 'CCC');")
+
+# con.commit()
+
+# cur.execute("""
+#               select a.child, a.parent, b.parent as Grandparent from df_28 a inner join df_28 b on a.parent = b.child
+#             """)
+# mysql_print()
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = (
+#     ("A", "AA"),
+#     ("B", "BB"),
+#     ("C", "CC"),
+#     ("AA", "AAA"),
+#     ("BB", "BBB"),
+#     ("CC", "CCC")
+# )
+# schema = "child string, parent string"
+
+# df = spark.createDataFrame(data=data, schema=schema)
+# df.createOrReplaceTempView("df")
+
+# df.alias('a').join(df.alias('b'), col("a.parent") == col("b.child"))\
+#   .drop(col("b.child")).selectExpr("child", "a.parent", "b.parent as Grandparent").show()
+  
