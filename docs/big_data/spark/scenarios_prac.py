@@ -8,12 +8,26 @@ from pyspark.sql.types import StructType, StructField, StringType, IntegerType, 
 import sys
 
 # For using SQLite
-import sqlite3
-con = sqlite3.connect("scenarios.db")
+# import sqlite3
+# con = sqlite3.connect("scenarios.db")
+# cur = con.cursor()
+# def print_sqlite_table(query):
+#     for x in cur.execute(query).fetchall():
+#         print(x)
+        
+# Using Mysql
+import mysql.connector
+con = mysql.connector.connect(
+  host="localhost",
+  user="root",
+  password="pass",
+  database="scenarios"
+)
 cur = con.cursor()
-def print_sqlite_table(query):
-    for x in cur.execute(query).fetchall():
-        print(x)
+def mysql_print():
+  print (cur.column_names)
+  for x in cur:
+      print (x)
 
 python_path = sys.executable
 os.environ['PYSPARK_PYTHON'] = python_path
@@ -347,23 +361,76 @@ spark = SparkSession.builder.getOrCreate()
 
 # SQLITE ---------------------------------------------------------------------------------------------------------------------------
 
-# cur.execute("DROP TABLE IF EXISTS df_36;")
-# cur.execute("CREATE TABLE df_36 (sell_date string, product string);")
-# cur.execute("INSERT INTO df_36 VALUES \
-#     ('2020-05-30', 'Headphone'), \
-#     ('2020-05-30', 'T-Shirt');")
+cur.execute("DROP TABLE IF EXISTS df_32;")
+cur.execute("CREATE TABLE df_32 (food_id int, food_item varchar(100))")
+cur.execute("INSERT INTO df_32 VALUES \
+    (1, 'Veg Biryani'), \
+    (2, 'Veg Fried Rice'), \
+    (3, 'Kaju Fried Rice'), \
+    (4, 'Chicken Biryani'), \
+    (5, 'Chicken Dum Biryani'), \
+    (6, 'Prawns Biryani'), \
+    (7, 'Fish Birayani');")
 
-# con.commit()
+cur.execute("DROP TABLE IF EXISTS df_32_1;")
+cur.execute("CREATE TABLE df_32_1 (food_id int, rating int);")
+cur.execute("INSERT INTO df_32_1 VALUES \
+    (1, 5), \
+    (2, 3), \
+    (3, 4), \
+    (4, 4), \
+    (5, 5), \
+    (6, 4), \
+    (7, 4);")
+con.commit()
 
-# print_sqlite_table("\
-# ")
+# cur.execute(""" 
+#               select a.food_id, food_item, rating, repeat('*', rating) as stars 
+#               from df_32 as a inner join df_32_1 as b on a.food_id = b.food_id
+#             """)
+# mysql_print()
+
+# cur.execute("""
+#                    select a.food_id, food_item, rating,
+#                         case 
+#                             when rating = 5 then '*****'
+#                             when rating = 4 then '****'
+#                             when rating = 3 then '***'
+#                             when rating = 2 then '**'
+#                             when rating = 1 then '*' end
+#                         as stars 
+#                     from df_32 as a inner join df_32_1 as b on a.food_id = b.food_id
+#                    """)
+# mysql_print()
 
 # SPARK ---------------------------------------------------------------------------------------------------------------------------
 
 # data = (
-# 
+#     (1, "Veg Biryani"),
+#     (2, "Veg Fried Rice"),
+#     (3, "Kaju Fried Rice"),
+#     (4, "Chicken Biryani"),
+#     (5, "Chicken Dum Biryani"),
+#     (6, "Prawns Biryani"),
+#     (7, "Fish Birayani")
 # )
-# schema = ""
+# schema = "food_id int, food_item string"
 
-# df = spark.createDataFrame(data=data, schema=schema)
-# df.createOrReplaceTempView("df")
+# df1 = spark.createDataFrame(data=data, schema=schema)
+# df1.createOrReplaceTempView("df1")
+
+# data = (
+#     (1, 5),
+#     (2, 3),
+#     (3, 4),
+#     (4, 4),
+#     (5, 5),
+#     (6, 4),
+#     (7, 4)
+# )
+# schema = "food_id int, rating int"
+
+# df2 = spark.createDataFrame(data=data, schema=schema)
+# df2.createOrReplaceTempView("df2")
+
+# df1.join(df2, ["food_id"]).withColumn("stars", expr("repeat('*', rating)")).show()
