@@ -609,3 +609,85 @@ spark = SparkSession.builder.getOrCreate()
 #              inner join df2 on dept_id = dept_id1
 #           """).show()
 
+# =======================================================================================================================
+# Scenario 29
+# =======================================================================================================================
+
+# +---+                +----+   
+# |col|                |col1|
+# +---+                +----+
+# |  1|                |   1|
+# |  2|                |   2|
+# |  3|                |   3|
+# +---+                |   4|
+#                      |   5|
+#                      +----+
+
+
+
+#      =>>     +---+
+#              |col|
+#              +---+
+#              |  1|
+#              |  2|
+#              |  4|
+#              |  5|
+#              +---+
+
+# MYSQL ---------------------------------------------------------------------------------------------------------------------------
+
+# cur.execute("DROP TABLE IF EXISTS df_29;")
+# cur.execute("CREATE TABLE df_29 (col int);")
+# cur.execute("INSERT INTO df_29 VALUES \
+#     (1), \
+#     (2), \
+#     (3);")
+
+# cur.execute("DROP TABLE IF EXISTS df_29_1;")
+# cur.execute("CREATE TABLE df_29_1 (col1 int);")
+# cur.execute("INSERT INTO df_29_1 VALUES \
+#     (1), \
+#     (2), \
+#     (3), \
+#     (4), \
+#     (5);")
+
+# con.commit()
+
+# cur.execute("""
+#             select * from df_29 where col not in (select max(col) from df_29) union
+#             select col1 as col from df_29_1 where col1 not in (select max(col) from df_29)
+# """)
+# mysql_print()
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = [
+#     (1,),
+#     (2,),
+#     (3,),
+# ]
+# schema = "col int"
+
+# df1 = spark.createDataFrame(data=data, schema=schema)
+# df1.createOrReplaceTempView("df1")
+
+# data = [
+#     (1,),
+#     (2,),
+#     (3,),
+#     (4,),
+#     (5,)
+# ]
+# schema = "col1 int"
+
+# df2 = spark.createDataFrame(data=data, schema=schema)    
+# df2.createOrReplaceTempView("df2")
+
+# df1.filter("col not in (select max(col) from df1)").union(df2.filter("col1 not in (select max(col) from df1)")).distinct().show()
+
+# maxSalary = df1.selectExpr("max(col)").first()[0]
+# df1.filter(col("col") != maxSalary).union(df2.filter(col("col1") != maxSalary)).distinct().show()
+
+# maxSalary = df1.selectExpr("max(col)").first()[0]
+# df1.join(df2, df1.col == df2.col1, "outer").drop("col").withColumnRenamed("col1","col").filter(~col("col").isin(maxSalary)).show()
