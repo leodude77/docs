@@ -891,3 +891,23 @@ spark = SparkSession.builder.getOrCreate()
 
 # df1.join(df2, df1.id == df2.id1, "full").withColumn("comment", expr("case when id is null then 'New in source' when id1 is null then 'New in target' when name!=name1 then 'Mismatched' end"))\
 #   .filter("comment is not null").withColumn("id", expr("coalesce(id, id1)")).select("id", "comment").show()
+
+# =======================================================================================================================
+# Scenario 25
+# =======================================================================================================================
+
+# emp_no,emp_name,dep
+# 101,Murugan,HealthCare
+# Invalid Entry,Description: Bad Record Entry
+# 102,Kannan,Finance
+# 103,Mani,IT
+# Connection lost,Description: Poor Connection
+# 104,Pavan,HR
+# Bad Record,Description:Corrupt Record
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# schema = "emp_no int, emp_name string, dep string, bad_col string"
+# df = spark.read.format('csv').options(header='true', columnNameOfCorruptRecord='bad_col', )\
+#   .schema(schema).load('C:\Code\docs\docs\\big_data\spark\sc25.csv')
+# df.filter("bad_col is not null").show(truncate=False)
