@@ -1398,23 +1398,63 @@ spark = SparkSession.builder.getOrCreate()
  
 # SPARK ---------------------------------------------------------------------------------------------------------------------------
 
-def col_creator(cols, main_col):
-  arr_ret = []
-  for x in cols:
-    # arr_ret.append(col(main_col+'.'+x).alias(x))
-    arr_ret.append(f'{main_col}.{x} as {x}')
-  return arr_ret
+# def create_column_list(columns, parent_column):
+#     return [f"{parent_column}.{column} as {column}" for column in columns]
 
-df = spark.read.format("json").options(multiline=True).load("C:\Code\docs\docs\\big_data\spark\sc_19.json")
-df.printSchema()
+# df = spark.read.format("json").options(multiline=True).load("C:\Code\docs\docs\\big_data\spark\sc_19.json")
+# df.printSchema()
 
-cols_multiMedia = df.withColumn("multiMedia", explode(col("multiMedia"))).select("multiMedia.*").columns
-cols_likeDislike = df.select("likeDislike.*").columns
+# cols_multiMedia = df.withColumn("multiMedia", explode(col("multiMedia"))).select("multiMedia.*").columns
+# cols_likeDislike = df.select("likeDislike.*").columns
 
-other_cols = [ c for c in df.columns if c not in ['multiMedia', 'likeDislike'] ]
+# other_cols = [ c for c in df.columns if c not in ['multiMedia', 'likeDislike'] ]
 
-all_cols = [*other_cols, *col_creator(cols_multiMedia, 'multiMedia'), *col_creator(cols_likeDislike, 'likeDislike')]
-all_cols.sort()
+# all_cols = [*other_cols, *create_column_list(cols_multiMedia, 'multiMedia'), *create_column_list(cols_likeDislike, 'likeDislike')]
+# all_cols.sort()
 
-df.withColumn("multiMedia", explode(col("multiMedia")))\
-  .selectExpr(all_cols).printSchema()
+# df.withColumn("multiMedia", explode(col("multiMedia")))\
+#   .selectExpr(all_cols).printSchema()
+
+# =======================================================================================================================
+# Scenario 18
+# =======================================================================================================================
+
+# +------------------+     =>>     +------------------+
+# |              word|             |      reverse word|
+# +------------------+             +------------------+
+# |The Social Dilemma|             |ehT laicoS ammeliD|
+# +------------------+             +------------------+
+
+# MYSQL ---------------------------------------------------------------------------------------------------------------------------
+
+# cur.execute("DROP TABLE IF EXISTS df_18;")
+# cur.execute("CREATE TABLE df_18 (word varchar(100));")
+# cur.execute("INSERT INTO df_18 VALUES \
+#     ('The Social Dilemma');")
+
+# con.commit()
+
+# cur.execute("""
+#             select CONCAT_WS( ' ',
+#                               REVERSE(SUBSTRING_INDEX(word, ' ', 1)),
+#                               REVERSE(SUBSTRING_INDEX(SUBSTRING_INDEX(word, ' ', 2), ' ', -1)),
+#                               REVERSE(SUBSTRING_INDEX(word, ' ', -1)) 
+#                             ) as word from df_18
+#             """)
+# mysql_print()
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = (
+#   ('The Social Dilemma',),
+# )
+# schema = "word string"
+
+# df = spark.createDataFrame(data=data, schema=schema)
+# df.createOrReplaceTempView("df")
+
+# @udf(returnType=StringType())
+# def reverse_udf(str):
+#   return " ".join(word[::-1] for word in str.split(' '))
+
+# df.withColumn("word", reverse_udf(df.word)).show()
