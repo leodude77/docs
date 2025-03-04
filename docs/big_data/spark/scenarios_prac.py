@@ -980,3 +980,76 @@ spark = SparkSession.builder.getOrCreate()
 
 # df.groupBy("userid").agg(collect_list("page").alias("pages")).show(truncate=False)
 
+# =======================================================================================================================
+# Scenario 23
+# =======================================================================================================================
+
+# +-----------+-----------+              +-----------+
+# |customer_id|product_key|              |product_key|
+# +-----------+-----------+              +-----------+
+# |          1|          5|              |          5|
+# |          2|          6|              |          6|
+# |          3|          5|              +-----------+
+# |          3|          6|
+# |          1|          6|
+# +-----------+-----------+
+
+
+#      =>>     +-----------+
+#              |customer_id|
+#              +-----------+
+#              |          1|
+#              |          3|
+#              +-----------+
+
+# MYSQL ---------------------------------------------------------------------------------------------------------------------------
+
+# cur.execute("DROP TABLE IF EXISTS df_23;")
+# cur.execute("CREATE TABLE df_23 (customer_id int, product_key varchar(100));")
+# cur.execute("INSERT INTO df_23 VALUES \
+#     (1, '6'), \
+#     (2, '6'), \
+#     (3, '5'), \
+#     (3, '6'), \
+#     (1, '5');")
+
+# cur.execute("DROP TABLE IF EXISTS df_23_1;")
+# cur.execute("CREATE TABLE df_23_1 (product_key varchar(100));")
+# cur.execute("INSERT INTO df_23_1 VALUES \
+#     ('5'), \
+#     ('6');")
+
+# con.commit()
+
+# cur.execute("""
+#             select customer_id as product_key_list from df_23 
+#             group by customer_id having group_concat(product_key order by product_key) 
+#             IN ( select group_concat(product_key order by product_key ) from df_23_1 )
+#             """)
+# mysql_print()
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = (
+#     (1, 6),
+#     (2, 6),
+#     (3, 5),
+#     (3, 6),
+#     (1, 5)
+# )
+# schema = "customer_id int, product_key int"
+
+# df1 = spark.createDataFrame(data=data, schema=schema)
+# df1.createOrReplaceTempView("df1")
+
+# data = (
+#     (5,),
+#     (6,)
+# )
+# schema = "product_key int"
+
+# df2 = spark.createDataFrame(data=data, schema=schema)
+# df2.createOrReplaceTempView("df2")
+
+# df1.groupBy("customer_id").agg(sort_array(collect_list("product_key")).alias("product_key_list"))\
+#   .filter("product_key_list IN (select sort_array(collect_list(product_key)) from df2)").show()
