@@ -1115,3 +1115,102 @@ spark = SparkSession.builder.getOrCreate()
 # df.createOrReplaceTempView("df")
 
 # df.withColumn("new_price", sum(df.price).over(Window.partitionBy(df.pid).orderBy(df.date))).show()
+
+# =======================================================================================================================
+# Scenario 21
+# =======================================================================================================================
+
+# +----+---+----+
+# |from| to|dist|     =>>     +----+---+--------------+
+# +----+---+----+             |from| to|roundtrip_dist|
+# | SEA| SF| 300|             +----+---+--------------+
+# | CHI|SEA|2000|             | SEA| SF|           600|
+# |  SF|SEA| 300|             | CHI|SEA|          4000|
+# | SEA|CHI|2000|             | LND|SEA|          1000|
+# | SEA|LND| 500|             +----+---+--------------+
+# | LND|SEA| 500|
+# | LND|CHI|1000|
+# | CHI|NDL| 180|
+# +----+---+----+
+
+
+# MYSQL ---------------------------------------------------------------------------------------------------------------------------
+
+# cur.execute("DROP TABLE IF EXISTS df_21;")
+# cur.execute("CREATE TABLE df_21 (from_cty varchar(100), to_cty varchar(100), dist int);")
+# cur.execute("INSERT INTO df_21 VALUES \
+#     ('SEA', 'SF', 300), \
+#     ('CHI', 'SEA', 2000), \
+#     ('SF', 'SEA', 300), \
+#     ('SEA', 'CHI', 2000), \
+#     ('SEA', 'LND', 500), \
+#     ('LND', 'SEA', 500), \
+#     ('LND', 'CHI', 1000), \
+#     ('CHI', 'NDL', 180);")
+
+# con.commit()
+
+# cur.execute("""
+#             select start_city, end_city, 2*main_dist as roundtrip_dist from
+#             (
+#               select *, RANK() over (partition by looping_cty order by start_city) as rank_city from
+#               (
+#                 select a.from_cty as start_city, a.to_cty as end_city, a.dist as main_dist,
+#                   CONCAT (
+#                   case when a.from_cty < a.to_cty then a.from_cty else a.to_cty end,
+#                   '->',
+#                   case when a.from_cty > a.to_cty then a.from_cty else a.to_cty end
+#                   ) as looping_cty 
+#                 from df_21 a inner join df_21 b on a.to_cty = b.from_cty 
+#                 and a.from_cty = b.to_cty
+#               ) e
+#             ) f where rank_city = 1
+#             """)
+
+# cur.execute("""
+#             select to_cty as from_city, from_cty as to_cty, 2*dist as roundtrip_dist from
+#             (
+#               select *, ROW_NUMBER() OVER (partition by looping_cty) as ranker_number from
+#               (  select *, 
+#                   CONCAT (
+#                         case when from_cty < to_cty then from_cty else to_cty end,
+#                         '->',
+#                         case when from_cty > to_cty then from_cty else to_cty end
+#                         ) as looping_cty
+#                 from df_21
+#               ) e
+#             ) f where ranker_number=2
+#             """)
+
+# cur.execute("""
+#               select from_cty, to_cty, 2 * dist as dist from
+#               (
+#                 select a.from_cty, a.to_cty, a.dist from df_21 a
+#                 inner join df_21 b on
+#                 a.to_cty = b.from_cty and
+#                 b.to_cty = a.from_cty
+#                 where a.from_cty < a.to_cty
+#               ) e
+#             """)
+
+# mysql_print()
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = (
+#     ("SEA", "SF", 300),
+#     ("CHI", "SEA", 2000),
+#     ("SF", "SEA", 300),
+#     ("SEA", "CHI", 2000),
+#     ("SEA", "LND", 500),
+#     ("LND", "SEA", 500),
+#     ("LND", "CHI", 1000),
+#     ("CHI", "NDL", 180)
+# )
+# schema = "from_cty string, to_cty string, dist int"
+
+# df = spark.createDataFrame(data=data, schema=schema)
+# df.createOrReplaceTempView("df")
+
+# df.alias("a").join(df.alias("b"), (col("a.to_cty") == col("b.from_cty")) & (col("a.from_cty") == col("b.to_cty")))\
+#   .where(col("a.from_cty")<col("a.to_cty")).selectExpr("a.from_cty as from_cty", "a.to_cty as to_cty","a.dist * 2 as round_trip").show()
