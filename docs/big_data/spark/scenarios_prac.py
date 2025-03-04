@@ -1285,41 +1285,136 @@ spark = SparkSession.builder.getOrCreate()
 # Scenario 20
 # =======================================================================================================================
 
+# root                                                     =>>             root
+#  |-- code: long (nullable = true)                                        |-- code: long (nullable = true)
+#  |-- commentCount: long (nullable = true)                                |-- commentCount: long (nullable = true)
+#  |-- createAt: string (nullable = true)                                  |-- createdAt: string (nullable = true)
+#  |-- createdAt: string (nullable = true)                                 |-- feedsComment: string (nullable = true)
+#  |-- description: string (nullable = true)                               |-- imagePaths: string (nullable = true)
+#  |-- dislikes: long (nullable = true)                                    |-- images: string (nullable = true)
+#  |-- feedsComment: string (nullable = true)                              |-- isdeleted: boolean (nullable = true)
+#  |-- id: long (nullable = true)                                          |-- lat: long (nullable = true)
+#  |-- imagePaths: string (nullable = true)                                |-- likeDislike: struct (nullable = false)
+#  |-- images: string (nullable = true)                                    |    |-- dislikes: long (nullable = true)
+#  |-- isdeleted: boolean (nullable = true)                                |    |-- likes: long (nullable = true)
+#  |-- lat: long (nullable = true)                                         |    |-- userAction: long (nullable = true)
+#  |-- likeCount: long (nullable = true)                                   |-- lng: long (nullable = true)
+#  |-- likes: long (nullable = true)                                       |-- location: string (nullable = true)
+#  |-- lng: long (nullable = true)                                         |-- msg: string (nullable = true)
+#  |-- location: string (nullable = true)                                  |-- multiMedia: array (nullable = false)
+#  |-- mediatype: long (nullable = true)                                   |    |-- element: struct (containsNull = false)
+#  |-- msg: string (nullable = true)                                       |    |    |-- createAt: string (nullable = true)
+#  |-- name: string (nullable = true)                                      |    |    |-- description: string (nullable = true)
+#  |-- place: string (nullable = true)                                     |    |    |-- id: long (nullable = true)
+#  |-- profilePicture: string (nullable = true)                            |    |    |-- likeCount: long (nullable = true)
+#  |-- title: string (nullable = true)                                     |    |    |-- mediatype: long (nullable = true)
+#  |-- totalFeed: long (nullable = true)                                   |    |    |-- name: string (nullable = true)
+#  |-- url: string (nullable = true)                                       |    |    |-- place: string (nullable = true)
+#  |-- userAction: long (nullable = true)                                  |    |    |-- url: string (nullable = true)
+#  |-- userId: long (nullable = true)                                      |-- profilePicture: string (nullable = true)
+#  |-- videoUrl: string (nullable = true)                                  |-- title: string (nullable = true)
+#                                                                          |-- totalFeed: long (nullable = true)
+#                                                                          |-- userId: long (nullable = true)
+#                                                                          |-- videoUrl: string (nullable = true)
+                                                                         
 # SPARK ---------------------------------------------------------------------------------------------------------------------------
 
-df = spark.read.format("json").options(multiline=True).load("C:\\Code\\docs\\docs\\big_data\\spark\\sc_20.json")
+# df = spark.read.format("json").options(multiline=True).load("C:\\Code\\docs\\docs\\big_data\\spark\\sc_20.json")
+# df.printSchema()
+
+# cols_to_remove = ['dislikes', 'likes', 'userAction', 'createAt', 'description', 'id', 'likeCount', 'mediatype',\
+#     'name', 'place', 'url' ]
+
+# cols_filtered = [c for c, t in df.dtypes if c not in cols_to_remove]
+
+# cols_to_add = ["likeDislike", "multiMedia"]
+
+# cols_to_replace = {
+#   'likeDislike' : struct(col("dislikes"), col("likes"), col("userAction")).alias("likeDislike"),
+#   'multiMedia' : array(struct(
+#             col("createAt"),
+#             col("description"),
+#             col("id"),
+#             col("likeCount"),
+#             col("mediatype"),
+#             col("name"),
+#             col("place"),
+#             col("url")
+#         ).alias("element")
+#     ).alias("multiMedia")
+# }
+
+# cols_filtered = [*cols_filtered, *cols_to_add]
+# cols_filtered.sort()
+
+# struct_cols = []
+# for x in cols_filtered:
+#   if x in cols_to_replace.keys():
+#     struct_cols.append(cols_to_replace[x])
+#     continue
+#   struct_cols.append(col(x))
+
+# df.select([*struct_cols]).printSchema()
+
+# =======================================================================================================================
+# Scenario 19
+# =======================================================================================================================
+
+# root                                                              =>>      root
+#  |-- code: long (nullable = true)                                          |-- code: long (nullable = true)
+#  |-- commentCount: long (nullable = true)                                  |-- commentCount: long (nullable = true)
+#  |-- createdAt: string (nullable = true)                                   |-- createdAt: string (nullable = true)
+#  |-- description: string (nullable = true)                                 |-- description: string (nullable = true)
+#  |-- feedsComment: string (nullable = true)                                |-- feedsComment: string (nullable = true)
+#  |-- id: long (nullable = true)                                            |-- id: long (nullable = true)
+#  |-- imagePaths: string (nullable = true)                                  |-- imagePaths: string (nullable = true)
+#  |-- images: string (nullable = true)                                      |-- images: string (nullable = true)
+#  |-- isdeleted: boolean (nullable = true)                                  |-- isdeleted: boolean (nullable = true)
+#  |-- lat: long (nullable = true)                                           |-- lat: long (nullable = true)
+#  |-- likeDislike: struct (nullable = true)                                 |-- dislikes: long (nullable = true)
+#  |    |-- dislikes: long (nullable = true)                                 |-- likes: long (nullable = true)
+#  |    |-- likes: long (nullable = true)                                    |-- userAction: long (nullable = true)
+#  |    |-- userAction: long (nullable = true)                               |-- lng: long (nullable = true)
+#  |-- lng: long (nullable = true)                                           |-- location: string (nullable = true)
+#  |-- location: string (nullable = true)                                    |-- mediatype: long (nullable = true)
+#  |-- mediatype: long (nullable = true)                                     |-- msg: string (nullable = true)
+#  |-- msg: string (nullable = true)                                         |-- createAt: string (nullable = true)
+#  |-- multiMedia: array (nullable = true)                                   |-- description: string (nullable = true)
+#  |    |-- element: struct (containsNull = true)                            |-- id: long (nullable = true)
+#  |    |    |-- createAt: string (nullable = true)                          |-- likeCount: long (nullable = true)
+#  |    |    |-- description: string (nullable = true)                       |-- mediatype: long (nullable = true)
+#  |    |    |-- id: long (nullable = true)                                  |-- name: string (nullable = true)
+#  |    |    |-- likeCount: long (nullable = true)                           |-- place: string (nullable = true)
+#  |    |    |-- mediatype: long (nullable = true)                           |-- url: string (nullable = true)
+#  |    |    |-- name: string (nullable = true)                              |-- name: string (nullable = true)
+#  |    |    |-- place: string (nullable = true)                             |-- profilePicture: string (nullable = true)
+#  |    |    |-- url: string (nullable = true)                               |-- title: string (nullable = true)
+#  |-- name: string (nullable = true)                                        |-- totalFeed: long (nullable = true)
+#  |-- profilePicture: string (nullable = true)                              |-- userId: long (nullable = true)
+#  |-- title: string (nullable = true)                                       |-- videoUrl: string (nullable = true)
+#  |-- totalFeed: long (nullable = true)
+#  |-- userId: long (nullable = true)
+#  |-- videoUrl: string (nullable = true)
+ 
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+def col_creator(cols, main_col):
+  arr_ret = []
+  for x in cols:
+    # arr_ret.append(col(main_col+'.'+x).alias(x))
+    arr_ret.append(f'{main_col}.{x} as {x}')
+  return arr_ret
+
+df = spark.read.format("json").options(multiline=True).load("C:\Code\docs\docs\\big_data\spark\sc_19.json")
 df.printSchema()
 
-cols_to_remove = ['dislikes', 'likes', 'userAction', 'createAt', 'description', 'id', 'likeCount', 'mediatype',\
-    'name', 'place', 'url' ]
+cols_multiMedia = df.withColumn("multiMedia", explode(col("multiMedia"))).select("multiMedia.*").columns
+cols_likeDislike = df.select("likeDislike.*").columns
 
-cols_filtered = [c for c, t in df.dtypes if c not in cols_to_remove]
+other_cols = [ c for c in df.columns if c not in ['multiMedia', 'likeDislike'] ]
 
-cols_to_add = ["likeDislike", "multiMedia"]
+all_cols = [*other_cols, *col_creator(cols_multiMedia, 'multiMedia'), *col_creator(cols_likeDislike, 'likeDislike')]
+all_cols.sort()
 
-cols_to_replace = {
-  'likeDislike' : struct(col("dislikes"), col("likes"), col("userAction")).alias("likeDislike"),
-  'multiMedia' : array(struct(
-            col("createAt"),
-            col("description"),
-            col("id"),
-            col("likeCount"),
-            col("mediatype"),
-            col("name"),
-            col("place"),
-            col("url")
-        ).alias("element")
-    ).alias("multiMedia")
-}
-
-cols_filtered = [*cols_filtered, *cols_to_add]
-cols_filtered.sort()
-
-struct_cols = []
-for x in cols_filtered:
-  if x in cols_to_replace.keys():
-    struct_cols.append(cols_to_replace[x])
-    continue
-  struct_cols.append(col(x))
-
-df.select([*struct_cols]).printSchema()
+df.withColumn("multiMedia", explode(col("multiMedia")))\
+  .selectExpr(all_cols).printSchema()
