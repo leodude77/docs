@@ -1053,3 +1053,65 @@ spark = SparkSession.builder.getOrCreate()
 
 # df1.groupBy("customer_id").agg(sort_array(collect_list("product_key")).alias("product_key_list"))\
 #   .filter("product_key_list IN (select sort_array(collect_list(product_key)) from df2)").show()
+
+# =======================================================================================================================
+# Scenario 22
+# =======================================================================================================================
+
+# +---+------+-----+     =>>     +---+------+-----+---------+
+# |pid|  date|price|             |pid|  date|price|new_price|
+# +---+------+-----+             +---+------+-----+---------+
+# |  1|26-May|  100|             |  1|26-May|  100|      100|
+# |  1|27-May|  200|             |  1|27-May|  200|      300|
+# |  1|28-May|  300|             |  1|28-May|  300|      600|
+# |  2|29-May|  400|             |  2|29-May|  400|      400|
+# |  3|30-May|  500|             |  3|30-May|  500|      500|
+# |  3|31-May|  600|             |  3|31-May|  600|     1100|
+# +---+------+-----+             +---+------+-----+---------+
+
+# MYSQL ---------------------------------------------------------------------------------------------------------------------------
+
+# cur.execute("DROP TABLE IF EXISTS df_22;")
+# cur.execute("CREATE TABLE df_22 (pid int, date varchar(100), price int);")
+# cur.execute("INSERT INTO df_22 VALUES \
+#     (1, '26-May', 100), \
+#     (1, '27-May', 200), \
+#     (1, '28-May', 300), \
+#     (2, '29-May', 400), \
+#     (3, '30-May', 500), \
+#     (3, '31-May', 600);")
+
+# con.commit()
+
+# cur.execute("""
+#             select pid, date, price, COALESCE(price+new_price_l1, price) as new_price from
+#             (
+#               select *, LAG(new_price) OVER (partition by pid order by date) as new_price_l1 from
+#               (
+#                 select *, COALESCE(price + older_price, price) as new_price from (
+#                   select *, LAG(price) OVER (partition by pid order by date) as older_price from df_22
+#                 ) as e
+#               ) as f
+#             ) as g
+#             """)
+# cur.execute("""
+#               select *, SUM(price) OVER (PARTITION BY pid ORDER BY date) DIV 1 AS new_price from df_22
+#             """)
+# mysql_print()
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = (
+#     (1, "26-May", 100),
+#     (1, "27-May", 200),
+#     (1, "28-May", 300),
+#     (2, "29-May", 400),
+#     (3, "30-May", 500),
+#     (3, "31-May", 600)
+# )
+# schema = "pid int, date string, price int"
+
+# df = spark.createDataFrame(data=data, schema=schema)
+# df.createOrReplaceTempView("df")
+
+# df.withColumn("new_price", sum(df.price).over(Window.partitionBy(df.pid).orderBy(df.date))).show()
