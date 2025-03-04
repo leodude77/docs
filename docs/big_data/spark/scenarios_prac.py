@@ -1280,3 +1280,46 @@ spark = SparkSession.builder.getOrCreate()
 # df2.show()
 
 # df1.join(df2, ["id"], "left").na.fill({'salary': 0}).orderBy("id").show()
+
+# =======================================================================================================================
+# Scenario 20
+# =======================================================================================================================
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+df = spark.read.format("json").options(multiline=True).load("C:\\Code\\docs\\docs\\big_data\\spark\\sc_20.json")
+df.printSchema()
+
+cols_to_remove = ['dislikes', 'likes', 'userAction', 'createAt', 'description', 'id', 'likeCount', 'mediatype',\
+    'name', 'place', 'url' ]
+
+cols_filtered = [c for c, t in df.dtypes if c not in cols_to_remove]
+
+cols_to_add = ["likeDislike", "multiMedia"]
+
+cols_to_replace = {
+  'likeDislike' : struct(col("dislikes"), col("likes"), col("userAction")).alias("likeDislike"),
+  'multiMedia' : array(struct(
+            col("createAt"),
+            col("description"),
+            col("id"),
+            col("likeCount"),
+            col("mediatype"),
+            col("name"),
+            col("place"),
+            col("url")
+        ).alias("element")
+    ).alias("multiMedia")
+}
+
+cols_filtered = [*cols_filtered, *cols_to_add]
+cols_filtered.sort()
+
+struct_cols = []
+for x in cols_filtered:
+  if x in cols_to_replace.keys():
+    struct_cols.append(cols_to_replace[x])
+    continue
+  struct_cols.append(col(x))
+
+df.select([*struct_cols]).printSchema()
