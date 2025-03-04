@@ -1214,3 +1214,69 @@ spark = SparkSession.builder.getOrCreate()
 
 # df.alias("a").join(df.alias("b"), (col("a.to_cty") == col("b.from_cty")) & (col("a.from_cty") == col("b.to_cty")))\
 #   .where(col("a.from_cty")<col("a.to_cty")).selectExpr("a.from_cty as from_cty", "a.to_cty as to_cty","a.dist * 2 as round_trip").show()
+
+# =======================================================================================================================
+# Scenario 20250304
+# =======================================================================================================================
+
+# +---+-----+         +---+------+
+# | id| name|         | id|salary|
+# +---+-----+         +---+------+
+# |  1|Henry|         |  1|   100|
+# |  2|Smith|         |  2|   500|
+# |  3| Hall|         |  4|  1000|
+# +---+-----+         +---+------+
+
+#      =>>     +---+-----+------+
+#              | id| name|salary|
+#              +---+-----+------+
+#              |  1|Henry|   100|
+#              |  2|Smith|   500|
+#              |  3| Hall|     0|
+#              +---+-----+------+
+
+# MYSQL ---------------------------------------------------------------------------------------------------------------------------
+
+# cur.execute("DROP TABLE IF EXISTS df_20250304;")
+# cur.execute("CREATE TABLE df_20250304 (id int, name varchar(100));")
+# cur.execute("INSERT INTO df_20250304 VALUES \
+#             (1, 'Henry'), \
+#             (2, 'Smith'), \
+#             (3, 'Hall');")
+
+# cur.execute("DROP TABLE IF EXISTS df_20250304_1;")
+# cur.execute("CREATE TABLE df_20250304_1 (id int, salary int);")
+# cur.execute("INSERT INTO df_20250304_1 VALUES \
+#             (1, 100), \
+#             (2, 500), \
+#             (4, 1000);")
+
+# con.commit()
+
+# cur.execute("""
+#             select a.id, a.name, coalesce(b.salary, 0) as salary from df_20250304 as a left join df_20250304_1 as b on a.id = b.id
+#             """)
+# mysql_print()
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data1 = [
+#     (1, "Henry"),
+#     (2, "Smith"),
+#     (3, "Hall")
+# ]
+# columns1 = ["id", "name"]
+# rdd1 = sc.parallelize(data1,1)
+# df1 = rdd1.toDF(columns1)
+# df1.show()
+# data2 = [
+#     (1, 100),
+#     (2, 500),
+#     (4, 1000)
+# ]
+# columns2 = ["id", "salary"]
+# rdd2 = sc.parallelize(data2,1)
+# df2 = rdd2.toDF(columns2)
+# df2.show()
+
+# df1.join(df2, ["id"], "left").na.fill({'salary': 0}).orderBy("id").show()
