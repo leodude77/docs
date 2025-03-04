@@ -25,9 +25,11 @@ con = mysql.connector.connect(
 )
 cur = con.cursor()
 def mysql_print():
+  print()
   print (cur.column_names)
   for x in cur:
       print (x)
+  print()
 
 python_path = sys.executable
 os.environ['PYSPARK_PYTHON'] = python_path
@@ -911,3 +913,70 @@ spark = SparkSession.builder.getOrCreate()
 # df = spark.read.format('csv').options(header='true', columnNameOfCorruptRecord='bad_col', )\
 #   .schema(schema).load('C:\Code\docs\docs\\big_data\spark\sc25.csv')
 # df.filter("bad_col is not null").show(truncate=False)
+
+# =======================================================================================================================
+# Scenario 24
+# =======================================================================================================================
+
+# +------+------------+
+# |userid|        page|     =>>     +------+--------------------------------------------------------------+
+# +------+------------+             |userid|pages                                                         |
+# |     1|        home|             +------+--------------------------------------------------------------+
+# |     1|    products|             |1     |[home, products, checkout, confirmation]                      |
+# |     1|    checkout|             |2     |[home, products, cart, checkout, confirmation, home, products]|
+# |     1|confirmation|             +------+--------------------------------------------------------------+
+# |     2|        home|
+# |     2|    products|
+# |     2|        cart|
+# |     2|    checkout|
+# |     2|confirmation|
+# |     2|        home|
+# |     2|    products|
+# +------+------------+
+
+# MYSQL ---------------------------------------------------------------------------------------------------------------------------
+
+# cur.execute("DROP TABLE IF EXISTS df_24;")
+# cur.execute("CREATE TABLE df_24 (userid int, page varchar(100));")
+# cur.execute("INSERT INTO df_24 VALUES \
+#     (1, 'home'), \
+#     (1, 'products'), \
+#     (1, 'checkout'), \
+#     (1, 'confirmation'), \
+#     (2, 'home'), \
+#     (2, 'products'), \
+#     (2, 'cart'), \
+#     (2, 'checkout'), \
+#     (2, 'confirmation'), \
+#     (2, 'home'), \
+#     (2, 'products');")
+
+# con.commit()
+
+# cur.execute("""
+#             select userid, JSON_ARRAYAGG(page) as pages from df_24 group by userid
+#             """)
+# mysql_print()
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = (
+#     (1, "home"),
+#     (1, "products"),
+#     (1, "checkout"),
+#     (1, "confirmation"),
+#     (2, "home"),
+#     (2, "products"),
+#     (2, "cart"),
+#     (2, "checkout"),
+#     (2, "confirmation"),
+#     (2, "home"),
+#     (2, "products")
+# )
+# schema = "userid int, page string"
+
+# df = spark.createDataFrame(data=data, schema=schema)
+# df.createOrReplaceTempView("df")
+
+# df.groupBy("userid").agg(collect_list("page").alias("pages")).show(truncate=False)
+
