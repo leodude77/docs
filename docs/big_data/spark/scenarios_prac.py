@@ -1608,3 +1608,41 @@ spark = SparkSession.builder.getOrCreate()
 # df.createOrReplaceTempView("df")
 
 # df.dropDuplicates(["name"]).show()
+
+# =======================================================================================================================
+# Scenario 15
+# =======================================================================================================================
+
+# +------+------+------+-------+-----+-------+------+     =>>     +------+------+------+-------+-----+-------+------+-----+
+# |rollno|  name|telugu|english|maths|science|social|             |rollno|  name|telugu|english|maths|science|social|total|
+# +------+------+------+-------+-----+-------+------+             +------+------+------+-------+-----+-------+------+-----+
+# |203040|rajesh|    10|     20|   30|     40|    50|             |203040|rajesh|    10|     20|   30|     40|    50|  150|
+# +------+------+------+-------+-----+-------+------+             +------+------+------+-------+-----+-------+------+-----+
+
+
+# MYSQL ---------------------------------------------------------------------------------------------------------------------------
+
+# cur.execute("DROP TABLE IF EXISTS df_15;")
+# cur.execute("CREATE TABLE df_15 (rollno VARCHAR(100), name VARCHAR(100), telugu VARCHAR(100), english VARCHAR(100), maths VARCHAR(100), science VARCHAR(100), social VARCHAR(100));")
+# cur.execute("INSERT INTO df_15 VALUES \
+#     ('203040', 'rajesh', '10', '20', '30', '40', '50');")
+# con.commit()
+
+# cur.execute("""
+#             select *, telugu+english+maths+science+social as total from df_15
+#             """)
+# mysql_print()
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = (
+#     ("203040", "rajesh", 10, 20, 30, 40, 50,),
+# )
+# schema = "rollno string, name string, telegu int, english int, maths int, science int, social int"
+
+# df = spark.createDataFrame(data=data, schema=schema)
+# df.createOrReplaceTempView("df")
+
+# df.withColumn("total", col("telegu") + col("english") + col("maths") + col("science") + col("social")).show()
+
+# df.selectExpr("*", "+".join(df.columns[2:]) + " as total").show()
