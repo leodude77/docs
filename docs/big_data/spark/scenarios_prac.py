@@ -1610,7 +1610,7 @@ spark = SparkSession.builder.getOrCreate()
 # df.dropDuplicates(["name"]).show()
 
 # =======================================================================================================================
-# Scenario 15
+# Scenario 14
 # =======================================================================================================================
 
 # +------+------+------+-------+-----+-------+------+     =>>     +------+------+------+-------+-----+-------+------+-----+
@@ -1707,3 +1707,65 @@ spark = SparkSession.builder.getOrCreate()
 # df.createOrReplaceTempView("df")
 
 # df.groupBy("dept").agg(count(lit(1)).alias("count"), max("emp_id").alias("max"), min("emp_id").alias("min")).show()
+
+# =======================================================================================================================
+# Scenario 12
+# =======================================================================================================================
+
+# +--------------------+----------+     =>>     +--------------------+----------+
+# |               email|    mobile|             |               email|    mobile|
+# +--------------------+----------+             +--------------------+----------+
+# |Renuka1992@gmail.com|9856765434|             |R**********92@gma...|98*****434|
+# |anbu.arasu@gmail.com|9844567788|             |a**********su@gma...|98*****788|
+# +--------------------+----------+             +--------------------+----------+
+
+# MYSQL ---------------------------------------------------------------------------------------------------------------------------
+
+# cur.execute("DROP TABLE IF EXISTS df_12;")
+# cur.execute("CREATE TABLE df_12 (email VARCHAR(100), mobile VARCHAR(100));")
+# cur.execute("INSERT INTO df_12 VALUES \
+#     ('Renuka1992@gmail.com', '9856765434'), \
+#     ('anbu.arasu@gmail.com', '9844567788');")
+
+# con.commit()
+
+# cur.execute("""
+#             select 
+#               CONCAT(
+#                 LEFT(SUBSTRING_INDEX(email, '@', 1), 1),
+#                 REPEAT('*', LENGTH(SUBSTRING_INDEX(email, '@', 1))-3),
+#                 RIGHT(SUBSTRING_INDEX(email, '@', 1), 2),
+#                 '@',
+#                 SUBSTRING_INDEX(email, '@', -1)
+#               ) as email,
+#               CONCAT(
+#                 LEFT(mobile, 2),
+#                 REPEAT('*', 5),
+#                 RIGHT(mobile, 3)
+#               ) as mobile
+#             from df_12
+#             """)
+
+# mysql_print()
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = (
+#     ("Renuka1992@gmail.com", "9856765434"),
+#     ("anbu.arasu@gmail.com", "9844567788"),
+# )
+# schema = "email string, mobile string"
+
+# @udf
+# def mask_email(email: str) -> str:
+#     local_part, domain = email.split('@')
+#     return f"{local_part[0]}{'*' * (len(local_part) - 3)}{local_part[-2:]}@{domain}"
+  
+# @udf
+# def mobile_masker(mobile):
+#     return mobile[:2] + 5 * '*' + mobile[-3:]
+
+# df = spark.createDataFrame(data=data, schema=schema)
+# df.createOrReplaceTempView("df")
+
+# df.withColumn("email", mask_email("email")).withColumn("mobile", mobile_masker("mobile")).show(truncate=False)
