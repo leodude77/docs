@@ -1646,3 +1646,64 @@ spark = SparkSession.builder.getOrCreate()
 # df.withColumn("total", col("telegu") + col("english") + col("maths") + col("science") + col("social")).show()
 
 # df.selectExpr("*", "+".join(df.columns[2:]) + " as total").show()
+
+# =======================================================================================================================
+# Scenario 13
+# =======================================================================================================================
+
+# +------+--------+-----------+
+# |emp_id|emp_name|       dept|     =>>   +-----------+-----+  
+# +------+--------+-----------+           |       dept|total|
+# |     1|    Jhon|Development|           +-----------+-----+
+# |     2|     Tim|Development|           |Development|    2|
+# |     3|   David|    Testing|           |    Testing|    3|
+# |     4|     Sam|    Testing|           | Production|    4|
+# |     5|   Green|    Testing|           +-----------+-----+
+# |     6|  Miller| Production|
+# |     7|  Brevis| Production|
+# |     8|  Warner| Production|
+# |     9|    Salt| Production|
+# +------+--------+-----------+
+
+
+# MYSQL ---------------------------------------------------------------------------------------------------------------------------
+
+# cur.execute("DROP TABLE IF EXISTS df_13;")
+# cur.execute("CREATE TABLE df_13 (emp_id VARCHAR(100), emp_name VARCHAR(100), dept VARCHAR(100));")
+# cur.execute("INSERT INTO df_13 VALUES \
+#     ('1', 'Jhon', 'Development'), \
+#     ('2', 'Tim', 'Development'), \
+#     ('3', 'David', 'Testing'), \
+#     ('4', 'Sam', 'Testing'), \
+#     ('5', 'Green', 'Testing'), \
+#     ('6', 'Miller', 'Production'), \
+#     ('7', 'Brevis', 'Production'), \
+#     ('8', 'Warner', 'Production'), \
+#     ('9', 'Salt', 'Production');")
+
+# con.commit()
+
+# cur.execute("""
+#             select dept, count(1) as count, max(emp_id), min(emp_id) from df_13 group by dept
+#             """)
+# mysql_print()
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = (
+#     ("1", "Jhon", "Development"),
+#     ("2", "Tim", "Development"),
+#     ("3", "David", "Testing"),
+#     ("4", "Sam", "Testing"),
+#     ("5", "Green", "Testing"),
+#     ("6", "Miller", "Production"),
+#     ("7", "Brevis", "Production"),
+#     ("8", "Warner", "Production"),
+#     ("9", "Salt", "Production"),
+# )
+# schema = "emp_id string, emp_name string, dept string"
+
+# df = spark.createDataFrame(data=data, schema=schema)
+# df.createOrReplaceTempView("df")
+
+# df.groupBy("dept").agg(count(lit(1)).alias("count"), max("emp_id").alias("max"), min("emp_id").alias("min")).show()
