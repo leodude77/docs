@@ -1458,3 +1458,98 @@ spark = SparkSession.builder.getOrCreate()
 #   return " ".join(word[::-1] for word in str.split(' '))
 
 # df.withColumn("word", reverse_udf(df.word)).show()
+
+# =======================================================================================================================
+# Scenario 20250304
+# =======================================================================================================================
+
+# +-----+----+------+       =>>     +-----+----+------+-----------+
+# |empid|name|salary|               |empid|name|salary|Designation|
+# +-----+----+------+               +-----+----+------+-----------+
+# |    1|   a| 10000|               |    1|   a| 10000|   Employee|
+# |    2|   b|  5000|               |    2|   b|  5000|   Employee|
+# |    3|   c| 15000|               |    3|   c| 15000|    Manager|
+# |    4|   d| 25000|               |    4|   d| 25000|    Manager|
+# |    5|   e| 50000|               |    5|   e| 50000|    Manager|
+# |    6|   f|  7000|               |    6|   f|  7000|   Employee|
+# +-----+----+------+               +-----+----+------+-----------+
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = [
+#       ("1", "a", "10000"),
+#       ("2", "b", "5000"),
+#       ("3", "c", "15000"),
+#       ("4", "d", "25000"),
+#       ("5", "e", "50000"),
+#       ("6", "f", "7000")
+# ]
+# myschema = ["empid","name","salary"]
+# df = spark.createDataFrame(data,schema=myschema)
+# df.show()
+# df.createOrReplaceTempView("df")
+
+# spark.sql("select *, case when salary > 10000 then 'Manager' else 'Employee' end as Designation from df").show()
+# df.withColumn("Designation", when(col("salary") > 10000, "Manager").otherwise("Employee")).show()
+
+# =======================================================================================================================
+# Scenario 17
+# =======================================================================================================================
+
+# +------+-----+---+------+-------+					          +------+-----+---+-------+
+# |emp_id| name|age| state|country|                   |emp_id| name|age|address|
+# +------+-----+---+------+-------+                   +------+-----+---+-------+
+# |     1|  Tim| 24|Kerala|  India|                   |     1|  Tim| 24|Comcity|
+# |     2|Asman| 26|Kerala|  India|                   |     2|Asman| 26|bimcity|
+# +------+-----+---+------+-------+                   +------+-----+---+-------+
+
+
+#      =>>     +------+-----+---+------+-------+-------+
+#              |emp_id| name|age| state|country|address|
+#              +------+-----+---+------+-------+-------+
+#              |     1|  Tim| 24|Kerala|  India|Comcity|
+#              |     2|Asman| 26|Kerala|  India|bimcity|
+#              +------+-----+---+------+-------+-------+
+
+# MYSQL ---------------------------------------------------------------------------------------------------------------------------
+
+# cur.execute("DROP TABLE IF EXISTS df_17;")
+# cur.execute("CREATE TABLE df_17 (emp_id VARCHAR(100), name VARCHAR(100), age VARCHAR(100), state VARCHAR(100), country VARCHAR(100));")
+# cur.execute("INSERT INTO df_17 VALUES \
+#     ('1', 'Tim', '24', 'Kerala', 'India'), \
+#     ('2', 'Asman', '26', 'Kerala', 'India');")
+
+# cur.execute("DROP TABLE IF EXISTS df_17_1;")
+# cur.execute("CREATE TABLE df_17_1 (emp_id VARCHAR(100), name VARCHAR(100), age VARCHAR(100), address VARCHAR(100));")
+# cur.execute("INSERT INTO df_17_1 VALUES \
+#     ('1', 'Tim', '24', 'Comcity'), \
+#     ('2', 'Asman', '26', 'bimcity');")
+
+# con.commit()
+
+# cur.execute("""
+#             select t1.*, t2.address from df_17 as t1 inner join df_17_1 as t2 on t1.emp_id = t2.emp_id
+#             """)
+# mysql_print()
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = (
+#     ("1", "Tim", "24", "Kerala", "India"),
+#     ("2", "Asman", "26", "Kerala", "India")
+# )
+# schema = "emp_id string, name string, age string, state string, country string"
+
+# df1 = spark.createDataFrame(data=data, schema=schema)
+# df1.createOrReplaceTempView("df1")
+
+# data = (
+#     ("1", "Tim", "24", "Comcity"),
+#     ("2", "Asman", "26", "bimcity")
+# )
+# schema = "emp_id string, name string, age string, address string"
+
+# df2 = spark.createDataFrame(data=data, schema=schema)
+# df2.createOrReplaceTempView("df2")
+
+# df1.alias("t1").join(df2.alias("t2"), ["emp_id"]).select("t1.*", "t2.address").show()
