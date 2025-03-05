@@ -1553,3 +1553,58 @@ spark = SparkSession.builder.getOrCreate()
 # df2.createOrReplaceTempView("df2")
 
 # df1.alias("t1").join(df2.alias("t2"), ["emp_id"]).select("t1.*", "t2.address").show()
+
+# =======================================================================================================================
+# Scenario 16
+# =======================================================================================================================
+
+# +---+----+-----------+------+     =>>     +---+----+-----------+------+
+# | id|name|       dept|salary|             | id|name|       dept|salary|
+# +---+----+-----------+------+             +---+----+-----------+------+
+# |  1|Jhon|    Testing|  5000|             |  1|Jhon|    Testing|  5000|
+# |  2| Tim|Development|  6000|             |  2| Tim|Development|  6000|
+# |  3|Jhon|Development|  5000|             |  4| Sky| Prodcution|  8000|
+# |  4| Sky| Prodcution|  8000|             +---+----+-----------+------+
+# +---+----+-----------+------+
+
+# MYSQL ---------------------------------------------------------------------------------------------------------------------------
+
+# cur.execute("DROP TABLE IF EXISTS df_16;")
+# cur.execute("CREATE TABLE df_16 (id VARCHAR(100), name VARCHAR(100), dept VARCHAR(100), salary VARCHAR(100));")
+# cur.execute("INSERT INTO df_16 VALUES \
+#     ('1', 'Jhon', 'Testing', '5000'), \
+#     ('2', ' Tim', 'Development', '6000'), \
+#     ('3', 'Jhon', 'Development', '5000'), \
+#     ('4', ' Sky', ' Prodcution', '8000');")
+
+# con.commit()
+
+# cur.execute("""
+#             select * from (
+#               select t1.*, ROW_NUMBER() OVER(partition by name) as ranker from df_16 as t1
+#             ) e where ranker = 1
+#             """)
+# cur.execute("""
+#               DELETE FROM df_16 where id IN (
+#                 select id from (
+#                   select t1.id from df_16 t1 inner join df_16 t2 on t1.name = t2.name and t1.id > t2.id
+#                 ) as e
+#               )
+#             """)
+# cur.execute("select * from df_16")
+# mysql_print()
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = (
+#     ("1", "Jhon", "Testing", "5000"),
+#     ("2", " Tim", "Development", "6000"),
+#     ("3", "Jhon", "Development", "5000"),
+#     ("4", " Sky", " Prodcution", "8000")
+# )
+# schema = "id string, name string, dept string, salary string"
+
+# df = spark.createDataFrame(data=data, schema=schema)
+# df.createOrReplaceTempView("df")
+
+# df.dropDuplicates(["name"]).show()
