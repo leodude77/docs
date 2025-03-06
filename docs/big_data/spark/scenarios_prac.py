@@ -1830,3 +1830,73 @@ spark = SparkSession.builder.getOrCreate()
 # df.createOrReplaceTempView("df")
 
 # df.withColumn("grade", when(df.salary < 5000, "C").when(df.salary < 10000, "B").otherwise("A")).show(truncate=False)
+
+# =======================================================================================================================
+# Scenario 10
+# =======================================================================================================================
+
+# +-----+-------------+-------------+
+# |empid|commissionamt|monthlastdate|     =>>     +-----+-------------+-------------+
+# +-----+-------------+-------------+             |empid|commissionamt|monthlastdate|
+# |    1|          300|  31-Jan-2021|             +-----+-------------+-------------+
+# |    1|          400|  28-Feb-2021|             |    1|          200|  31-Mar-2021|
+# |    1|          200|  31-Mar-2021|             |    2|          900|  31-Dec-2021|
+# |    2|         1000|  31-Oct-2021|             +-----+-------------+-------------+
+# |    2|          900|  31-Dec-2021|
+# +-----+-------------+-------------+
+
+# MYSQL ---------------------------------------------------------------------------------------------------------------------------
+
+# cur.execute("DROP TABLE IF EXISTS df_10;")
+# cur.execute("CREATE TABLE df_10 (empid VARCHAR(100), commissionamt VARCHAR(100), monthlastdate VARCHAR(100));")
+# cur.execute("INSERT INTO df_10 VALUES \
+#     ('1', '300', '31-Jan-2021'), \
+#     ('1', '400', '28-Feb-2021'), \
+#     ('1', '200', '31-Mar-2021'), \
+#     ('2', '1000', '31-Oct-2021'), \
+#     ('2', '900', '31-Dec-2021');")
+
+# con.commit()
+
+# cur.execute("""
+#               select empid, commissionamt, monthlastdate from
+#               (
+#                 select *, ROW_NUMBER() OVER (partition by empid order by STR_TO_DATE(monthlastdate, '%d-%b-%Y') desc) as ranker
+#                 from df_10
+#               ) e where ranker = 1;
+#             """)
+
+# cur.execute("""
+#              SELECT df.empid, df.commissionamt, df.monthlastdate
+#               FROM df_10 df
+#               JOIN (
+#                   SELECT empid, MAX(STR_TO_DATE(monthlastdate, '%d-%b-%Y')) AS latest_date
+#                   FROM df_10
+#                   GROUP BY empid
+#               ) AS latest_commission
+#               ON STR_TO_DATE(df.monthlastdate, '%d-%b-%Y') = latest_commission.latest_date
+#               and df.empid = latest_commission.empid
+#               ORDER BY df.empid; 
+#              """)
+
+# mysql_print()
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = [
+#     (1, 300, "31-Jan-2021"),
+#     (1, 400, "28-Feb-2021"),
+#     (1, 200, "31-Mar-2021"),
+#     (2, 1000, "31-Oct-2021"),
+#     (2, 900, "31-Dec-2021")
+# ]
+# df = spark.createDataFrame(data, ["empid", "commissionamt", "monthlastdate"])
+# df.show()
+
+# maxdatedf = df.withColumn("conv_date", expr("to_date(monthlastdate, 'dd-MMM-yyyy')")).groupBy(col("empid").alias("empid1"))\
+#   .agg(max('conv_date').alias("maxdate"))
+# maxdatedf.show()
+
+# joindf = df.join(maxdatedf, (df["empid"] == maxdatedf["empid1"]) & (to_date(df["monthlastdate"], 'dd-MMM-yyyy') == maxdatedf["maxdate"]),
+#                  "inner").drop("empid1", "maxdate").orderBy("empid")
+# joindf.show()
