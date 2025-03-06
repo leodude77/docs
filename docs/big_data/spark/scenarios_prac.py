@@ -2236,3 +2236,59 @@ spark = SparkSession.builder.getOrCreate()
 # df1.withColumn("salary", lit(1000)).union(df2).withColumn("splitter", element_at(split(col("email"), "@"), -1))\
 #   .filter((col("splitter").isin("gmail.com", "yahoo.com", "outlook.com"))\
 #      & (col('splitter') != col("email"))).drop('splitter').show()
+
+# =======================================================================================================================
+# Scenario 4
+# =======================================================================================================================
+
+# +------+-----------+-------+
+# |custid|   custname|address|     =>>     +------+-----------+--------+
+# +------+-----------+-------+             |custid|   custname| address|
+# |     1|   Mark Ray|     AB|             +------+-----------+--------+
+# |     2|Peter Smith|     CD|             |     1|   Mark Ray|[EF, AB]|
+# |     1|   Mark Ray|     EF|             |     2|Peter Smith|[CD, GH]|
+# |     2|Peter Smith|     GH|             |     3|       Kate|    [IJ]|
+# |     2|Peter Smith|     CD|             +------+-----------+--------+
+# |     3|       Kate|     IJ|
+# +------+-----------+-------+
+
+
+# MYSQL ---------------------------------------------------------------------------------------------------------------------------
+
+# cur.execute("DROP TABLE IF EXISTS df_4;")
+# cur.execute("CREATE TABLE df_4 (custid int, custname varchar(100), address varchar(100));")
+# cur.execute("INSERT INTO df_4 VALUES \
+#               (1, 'Mark Ray', 'AB'), \
+#               (2, 'Peter Smith', 'CD'), \
+#               (1, 'Mark Ray', 'EF'), \
+#               (2, 'Peter Smith', 'GH'), \
+#               (2, 'Peter Smith', 'CD'), \
+#               (3, 'Kate', 'IJ');")
+# con.commit()
+
+# cur.execute("""
+#               select custid, custname, CONCAT('[', GROUP_CONCAT(address), ']') as address from 
+#               (
+#                 select distinct custid, custname, address from df_4
+#               ) e
+#               group by custid, custname
+#             """)
+# mysql_print()
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = (
+#     (1, "Mark Ray", "AB"),
+#     (2, "Peter Smith", "CD"),
+#     (1, "Mark Ray", "EF"),
+#     (2, "Peter Smith", "GH"),
+#     (2, "Peter Smith", "CD"),
+#     (3, "Kate", "IJ"),
+# )
+# schema = "custid int, custname string, address string"
+
+# df = spark.createDataFrame(data=data, schema=schema)
+# df.createOrReplaceTempView("df")
+
+# df.distinct().groupBy(col("custid"), col("custname")).agg(collect_list(col("address")).alias("address"))\
+#   .orderBy('custid').show()
