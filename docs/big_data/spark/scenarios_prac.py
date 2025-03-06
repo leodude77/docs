@@ -1900,3 +1900,97 @@ spark = SparkSession.builder.getOrCreate()
 # joindf = df.join(maxdatedf, (df["empid"] == maxdatedf["empid1"]) & (to_date(df["monthlastdate"], 'dd-MMM-yyyy') == maxdatedf["maxdate"]),
 #                  "inner").drop("empid1", "maxdate").orderBy("empid")
 # joindf.show()
+
+# =======================================================================================================================
+# Scenario 9
+# =======================================================================================================================
+
+# +----+---------------+
+# |name|           rank|     =>>     c
+# +----+---------------+
+# |   a|   [1, 1, 1, 3]|
+# |   b|   [1, 2, 3, 4]|
+# |   c|[1, 1, 1, 1, 4]|
+# |   d|            [3]|
+# +----+---------------+
+
+# MYSQL ---------------------------------------------------------------------------------------------------------------------------
+
+# cur.execute("DROP TABLE IF EXISTS df_9;")
+# cur.execute("CREATE TABLE df_9 (name VARCHAR(100), ranker VARCHAR(100));")
+# cur.execute("INSERT INTO df_9 VALUES \
+#     ('a', '[1, 1, 1, 3]'), \
+#     ('b', '[1, 2, 3, 4]'), \
+#     ('c', '[1, 1, 1, 1, 4]'), \
+#     ('d', '[3]');")
+
+# con.commit()
+
+# cur.execute("""
+#               select name from (
+#                 select *, (CHAR_LENGTH(ranker) - CHAR_LENGTH(REPLACE(ranker, '1', ''))) DIV CHAR_LENGTH('1') as counter from df_9
+#                 order by counter desc
+#                 limit 1
+#               ) as e
+#             """)
+# mysql_print()
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = (
+#     ("a", [1, 1, 1, 3]),
+#     ("b", [1, 2, 3, 4]),
+#     ("c", [1, 1, 1, 1, 4]),
+#     ("d", [3])
+# )
+# schema = "name string, rank array<int>"
+
+# df = spark.createDataFrame(data=data, schema=schema)
+# df.createOrReplaceTempView("df")
+
+# print ( df.withColumn("exploded_ranks", explode(df.rank)).where("exploded_ranks=1").groupBy("name")\
+#   .agg(count(lit(1)).alias("counter")).orderBy(col("counter").desc()).first() )
+
+# =======================================================================================================================
+# Scenario 8
+# =======================================================================================================================
+
+# +--------+     =>>     +--------------------+
+# |   teams|             |             matches|
+# +--------+             +--------------------+
+# |   India|             |   India Vs Pakistan|
+# |Pakistan|             |   India Vs SriLanka|
+# |SriLanka|             |Pakistan Vs SriLanka|
+# +--------+             +--------------------+
+
+# MYSQL ---------------------------------------------------------------------------------------------------------------------------
+
+# cur.execute("DROP TABLE IF EXISTS df_8;")
+# cur.execute("CREATE TABLE df_8 (teams VARCHAR(100));")
+# cur.execute("INSERT INTO df_8 VALUES \
+#     ('India'), \
+#     ('Pakistan'), \
+#     ('SriLanka');")
+
+# con.commit()
+
+# cur.execute("""
+#              select CONCAT( df.teams, ' vs ', df1.teams) as matches from df_8 as df 
+#              inner join df_8 df1 on df.teams != df1.teams and df.teams < df1.teams
+#             """)
+# mysql_print()
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = (
+#     ("India",),
+#     ("Pakistan",),
+#     ("SriLanka",)
+# )
+# schema = "teams string"
+
+# df = spark.createDataFrame(data=data, schema=schema)
+# df.createOrReplaceTempView("df")
+
+# df.alias("a").join(df.alias("b"), (col("a.teams") != col("b.teams")) & (col("a.teams") < col("b.teams")), "inner")\
+#   .select(concat(col("a.teams"), lit(" vs "), col("b.teams")).alias("matches")).show()
