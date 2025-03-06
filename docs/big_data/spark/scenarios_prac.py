@@ -2351,3 +2351,69 @@ spark = SparkSession.builder.getOrCreate()
 # df.withColumn("values_val_lead", lead("values_val").over(Window.partitionBy("sensorid").orderBy("timestamp")))\
 #   .filter(col("values_val_lead").isNotNull())\
 #   .select("sensorid", "timestamp", (col("values_val_lead") - col("values_val")).alias("values")).show()
+
+# =======================================================================================================================
+# Scenario 2
+# =======================================================================================================================
+
+# +-------+----------+----------+
+# |orderid|statusdate|    status|     =>>     +-------+----------+----------+
+# +-------+----------+----------+             |orderid|statusdate|    status|
+# |      1|     1-Jan|   Ordered|             +-------+----------+----------+
+# |      1|     2-Jan|dispatched|             |      1|     2-Jan|dispatched|
+# |      1|     3-Jan|dispatched|             |      1|     3-Jan|dispatched|
+# |      1|     4-Jan|   Shipped|             |      2|     2-Jan|dispatched|
+# |      1|     5-Jan|   Shipped|             +-------+----------+----------+
+# |      1|     6-Jan| Delivered|
+# |      2|     1-Jan|   Ordered|
+# |      2|     2-Jan|dispatched|
+# |      2|     3-Jan|   shipped|
+# +-------+----------+----------+
+
+# MYSQL ---------------------------------------------------------------------------------------------------------------------------
+
+# cur.execute("DROP TABLE IF EXISTS df_2;")
+# cur.execute("CREATE TABLE df_2 (orderid int, statusdate varchar(100), status varchar(100));")
+# cur.execute("INSERT INTO df_2 VALUES \
+#               (1, '1-Jan', 'Ordered'), \
+#               (1, '2-Jan', 'dispatched'), \
+#               (1, '3-Jan', 'dispatched'), \
+#               (1, '4-Jan', 'Shipped'), \
+#               (1, '5-Jan', 'Shipped'), \
+#               (1, '6-Jan', 'Delivered'), \
+#               (2, '1-Jan', 'Ordered'), \
+#               (2, '2-Jan', 'dispatched'), \
+#               (2, '3-Jan', 'Shipped');")
+
+# con.commit()
+
+# cur.execute("""
+#               select orderid, statusdate, status from df_2 where status = 'dispatched'
+#               and orderid in (
+#                 select orderid from df_2 where status = BINARY 'Shipped'
+#               )
+#             """)
+# mysql_print()
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = (
+#     (1, "1-Jan", "Ordered"),
+#     (1, "2-Jan", "dispatched"),
+#     (1, "3-Jan", "dispatched"),
+#     (1, "4-Jan", "Shipped"),
+#     (1, "5-Jan", "Shipped"),
+#     (1, "6-Jan", "Delivered"),
+#     (2, '1-Jan', 'Ordered'),
+#     (2, '2-Jan', 'dispatched'),
+#     (2, '3-Jan', 'shipped')
+ 
+# )
+# schema = "orderid int, statusdate string, status string"
+
+# df = spark.createDataFrame(data=data, schema=schema)
+# df.createOrReplaceTempView("df")
+
+# df.filter(col("status") == "dispatched")\
+#   .filter(col("orderid").isin(*[row.orderid for row in df.filter(col("status") == "Ordered").select("orderid").collect()]))\
+#   .select("orderid", "statusdate", "status").show()
