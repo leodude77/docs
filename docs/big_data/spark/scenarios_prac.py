@@ -2072,3 +2072,59 @@ spark = SparkSession.builder.getOrCreate()
 
 # df.withColumn("ranker", rank().over(Window.partitionBy(col("year")).orderBy(col("quantity").desc())))\
 #   .filter("ranker = 1").orderBy(col("year"), col("sale_id")).drop('ranker').show()
+
+# =======================================================================================================================
+# Scenario 6
+# =======================================================================================================================
+
+# +-----+----+------+     =>>     +-----+----+------+-----------+
+# |empid|name|salary|             |empid|name|salary|Designation|
+# +-----+----+------+             +-----+----+------+-----------+
+# |    1|   a| 10000|             |    1|   a| 10000|   Employee|
+# |    2|   b|  5000|             |    2|   b|  5000|   Employee|
+# |    3|   c| 15000|             |    3|   c| 15000|    Manager|
+# |    4|   d| 25000|             |    4|   d| 25000|    Manager|
+# |    5|   e| 50000|             |    5|   e| 50000|    Manager|
+# |    6|   f|  7000|             |    6|   f|  7000|   Employee|
+# +-----+----+------+             +-----+----+------+-----------+
+
+# MYSQL ---------------------------------------------------------------------------------------------------------------------------
+
+# cur.execute("DROP TABLE IF EXISTS df_6;")
+# cur.execute("CREATE TABLE df_6 (empid int, name varchar(100), salary int);")
+# cur.execute("INSERT INTO df_6 VALUES \
+#             (1, 'a', 10000), \
+#             (2, 'b', 5000), \
+#             (3, 'c', 15000), \
+#             (4, 'd', 25000), \
+#             (5, 'e', 50000), \
+#             (6, 'f', 7000);")
+
+# con.commit()
+
+# cur.execute("""
+#               select empid, name, salary,
+#                 case 
+#                   when salary > 10000 then 'Manager'
+#                   else 'Employee'                  
+#                 end as Designation
+#               from df_6
+#             """)
+# mysql_print()
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = (
+#     (1, "a", 10000),
+#     (2, "b", 5000),
+#     (3, "c", 15000),
+#     (4, "d", 25000),
+#     (5, "e", 50000),
+#     (6, "f", 7000),
+# )
+# schema = "empid int, name string, salary int"
+
+# df = spark.createDataFrame(data=data, schema=schema)
+# df.createOrReplaceTempView("df")
+
+# df.withColumn("Designation", when(col("salary") > 10000, "Manager").otherwise("Employee")).show()
