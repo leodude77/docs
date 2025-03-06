@@ -2292,3 +2292,62 @@ spark = SparkSession.builder.getOrCreate()
 
 # df.distinct().groupBy(col("custid"), col("custname")).agg(collect_list(col("address")).alias("address"))\
 #   .orderBy('custid').show()
+
+# =======================================================================================================================
+# Scenario 3
+# =======================================================================================================================
+
+# +--------+----------+------+
+# |sensorid| timestamp|values|     =>>     +--------+----------+------+
+# +--------+----------+------+             |sensorid| timestamp|values|
+# |    1111|2021-01-15|    10|             +--------+----------+------+
+# |    1111|2021-01-16|    15|             |    1111|2021-01-15|     5|
+# |    1111|2021-01-17|    30|             |    1111|2021-01-16|    15|
+# |    1112|2021-01-15|    10|             |    1112|2021-01-15|    10|
+# |    1112|2021-01-15|    20|             |    1112|2021-01-15|    10|
+# |    1112|2021-01-15|    30|             +--------+----------+------+
+# +--------+----------+------+
+
+
+# MYSQL ---------------------------------------------------------------------------------------------------------------------------
+
+# cur.execute("DROP TABLE IF EXISTS df_3;")
+# cur.execute("CREATE TABLE df_3 (sensorid int, timestamp varchar(100), values_val int);")
+# cur.execute("INSERT INTO df_3 VALUES \
+#               (1111, '2021-01-15', 10), \
+#               (1111, '2021-01-16', 15), \
+#               (1111, '2021-01-17', 30), \
+#               (1112, '2021-01-15', 10), \
+#               (1112, '2021-01-15', 20), \
+#               (1112, '2021-01-15', 30);")
+
+# con.commit()
+
+# cur.execute("""
+#             select sensorid, timestamp, values_val_lead - values_val as values_needed from (
+#               select *, LEAD(values_val) OVER (partition by sensorid order by STR_TO_DATE(timestamp, '%Y-%m-%d'))
+#               as values_val_lead
+#               from df_3
+#             ) e 
+#             where values_val_lead IS NOT NULL
+#             """)
+# mysql_print()
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = (
+#     (1111, "2021-01-15", 10),
+#     (1111, "2021-01-16", 15),
+#     (1111, "2021-01-17", 30),
+#     (1112, "2021-01-15", 10),
+#     (1112, "2021-01-15", 20),
+#     (1112, "2021-01-15", 30),
+# )
+# schema = "sensorid int, timestamp string, values_val int"
+
+# df = spark.createDataFrame(data=data, schema=schema)
+# df.createOrReplaceTempView("df")
+
+# df.withColumn("values_val_lead", lead("values_val").over(Window.partitionBy("sensorid").orderBy("timestamp")))\
+#   .filter(col("values_val_lead").isNotNull())\
+#   .select("sensorid", "timestamp", (col("values_val_lead") - col("values_val")).alias("values")).show()
