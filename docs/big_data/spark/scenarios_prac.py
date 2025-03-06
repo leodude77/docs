@@ -1976,7 +1976,7 @@ spark = SparkSession.builder.getOrCreate()
 
 # cur.execute("""
 #              select CONCAT( df.teams, ' vs ', df1.teams) as matches from df_8 as df 
-#              inner join df_8 df1 on df.teams != df1.teams and df.teams < df1.teams
+#              inner join df_8 df1 on df.teams < df1.teams
 #             """)
 # mysql_print()
 
@@ -1992,5 +1992,5 @@ spark = SparkSession.builder.getOrCreate()
 # df = spark.createDataFrame(data=data, schema=schema)
 # df.createOrReplaceTempView("df")
 
-# df.alias("a").join(df.alias("b"), (col("a.teams") != col("b.teams")) & (col("a.teams") < col("b.teams")), "inner")\
+# df.alias("a").join(df.alias("b"), (col("a.teams") < col("b.teams")), "inner")\
 #   .select(concat(col("a.teams"), lit(" vs "), col("b.teams")).alias("matches")).show()
