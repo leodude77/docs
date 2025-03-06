@@ -2128,3 +2128,111 @@ spark = SparkSession.builder.getOrCreate()
 # df.createOrReplaceTempView("df")
 
 # df.withColumn("Designation", when(col("salary") > 10000, "Manager").otherwise("Employee")).show()
+
+# =======================================================================================================================
+# Scenario 5
+# =======================================================================================================================
+
+# +---+----+---+-------------+                  +---+----+---+---------------+------+
+# | id|name|age|        email|                  | id|name|age|          email|salary|
+# +---+----+---+-------------+                  +---+----+---+---------------+------+
+# |  1| abc| 31|abc@gmail.com|                  | 11| jkl| 22|  abc@gmail.com|  1000|
+# |  2| def| 23| defyahoo.com|                  | 12| vbn| 33|  vbn@yahoo.com|  3000|
+# |  3| xyz| 26|xyz@gmail.com|                  | 13| wer| 27|            wer|  2000|
+# |  4| qwe| 34| qwegmail.com|                  | 14| zxc| 30|        zxc.com|  2000|
+# |  5| iop| 24|iop@gmail.com|                  | 15| lkj| 29|lkj@outlook.com|  2000|
+# +---+----+---+-------------+                  +---+----+---+---------------+------+
+
+
+#      =>>     +---+----+---+---------------+------+
+#              | id|name|age|          email|salary|
+#              +---+----+---+---------------+------+
+#              |  1| abc| 31|  abc@gmail.com|  1000|
+#              |  3| xyz| 26|  xyz@gmail.com|  1000|
+#              |  5| iop| 24|  iop@gmail.com|  1000|
+#              | 11| jkl| 22|  abc@gmail.com|  1000|
+#              | 12| vbn| 33|  vbn@yahoo.com|  3000|
+#              | 15| lkj| 29|lkj@outlook.com|  2000|
+#              +---+----+---+---------------+------+
+
+
+# MYSQL ---------------------------------------------------------------------------------------------------------------------------
+
+# cur.execute("DROP TABLE IF EXISTS df_5;")
+# cur.execute("CREATE TABLE df_5 (id int, name varchar(100), age int, email varchar(100));")
+# cur.execute("INSERT INTO df_5 VALUES \
+#             (1, 'abc', 31, 'abc@gmail.com'), \
+#             (2, 'def', 23, 'yahoo.com'), \
+#             (3, 'xyz', 26, 'xyz@gmail.com'), \
+#             (4, 'qwe', 34, 'qwegmail.com'), \
+#             (5, 'iop', 24, 'iop@gmail.com');")
+
+# cur.execute("DROP TABLE IF EXISTS df_5_1;")
+# cur.execute("CREATE TABLE df_5_1 (id int, name varchar(100), age int, email varchar(100), salary int);")
+# cur.execute("INSERT INTO df_5_1 VALUES \
+#             (11, 'jkl', 22, 'abc@gmail.com', 1000), \
+#             (12, 'vbn', 33, 'vbn@yahoo.com', 3000), \
+#             (13, 'wer', 27, 'wer', 2000), \
+#             (14, 'zxc', 30, 'zxc.com', 2000), \
+#             (15, 'lkj', 29, 'lkj@outlook.com', 2000);")
+
+# con.commit()
+
+# cur.execute("""
+#             select id, name, age, email, salary from (
+#               select id, name, age, email, SUBSTRING_INDEX(email, '@', -1) as splitter, 1000 as salary from df_5
+#             ) e
+#             where 
+#               splitter IN ('gmail.com', 'yahoo.com', 'outlook.com')
+#               AND email != splitter
+              
+#             UNION
+            
+#             select id, name, age, email, salary from (
+#               select id, name, age, email, SUBSTRING_INDEX(email, '@', -1) as splitter, salary from df_5_1
+#             ) e
+#             where 
+#               splitter IN ('gmail.com', 'yahoo.com', 'outlook.com')
+#               AND email != splitter
+#             """)
+
+# mysql_print()
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = (
+#     (1, "abc", 31, "abc@gmail.com"),
+#     (2, "def", 23, "defyahoo.com"),
+#     (3, "xyz", 26, "xyz@gmail.com"),
+#     (4, "qwe", 34, "gmail.com"),
+#     (5, "iop", 24, "iop@gmail.com"),
+#     (6, "pov", 28, "@"),
+# )
+# schema = "id int, name string, age int, email string"
+
+# df1 = spark.createDataFrame(data=data, schema=schema)
+# df1.createOrReplaceTempView("df1")
+
+# data = (
+#     (11, "jkl", 22, "abc@gmail.com", 1000),
+#     (12, "vbn", 33, "vbn@yahoo.com", 3000),
+#     (13, "wer", 27, "wer", 2000),
+#     (14, "zxc", 30, "zxc.com", 2000),
+#     (15, "lkj", 29, "lkj@outlook.com", 2000),
+# )
+# schema = "id int, name string, age int, email string, salary int"
+
+# df2 = spark.createDataFrame(data=data, schema=schema)
+# df2.createOrReplaceTempView("df2")
+
+# df1.withColumn("splitter", element_at(split(col("email"), "@"), -1))\
+#   .filter((col("splitter").isin("gmail.com", "yahoo.com", "outlook.com"))\
+#      & (col('splitter') != col("email"))).withColumn("salary", lit(1000)).drop('splitter').union(
+#        df2.withColumn("splitter", element_at(split(col("email"), "@"), -1))\
+#         .filter((col("splitter").isin("gmail.com", "yahoo.com", "outlook.com"))\
+#           & (col('splitter') != col("email"))).drop("splitter")
+#      ).show()
+
+# df1.withColumn("salary", lit(1000)).union(df2).withColumn("splitter", element_at(split(col("email"), "@"), -1))\
+#   .filter((col("splitter").isin("gmail.com", "yahoo.com", "outlook.com"))\
+#      & (col('splitter') != col("email"))).drop('splitter').show()
