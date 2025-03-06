@@ -1769,3 +1769,64 @@ spark = SparkSession.builder.getOrCreate()
 # df.createOrReplaceTempView("df")
 
 # df.withColumn("email", mask_email("email")).withColumn("mobile", mobile_masker("mobile")).show(truncate=False)
+
+# =======================================================================================================================
+# Scenario 11
+# =======================================================================================================================
+
+# +------+---------------+------+     =>>     +------+---------------+------+-----+
+# |emp_id|       emp_name|salary|             |emp_id|       emp_name|salary|grade|
+# +------+---------------+------+             +------+---------------+------+-----+
+# |     1|           Jhon|  4000|             |     1|           Jhon|  4000|    C|
+# |     2|      Tim David| 12000|             |     2|      Tim David| 12000|    A|
+# |     3|Json Bhrendroff|  7000|             |     3|Json Bhrendroff|  7000|    B|
+# |     4|         Jordon|  8000|             |     4|         Jordon|  8000|    B|
+# |     5|          Green| 14000|             |     5|          Green| 14000|    A|
+# |     6|         Brewis|  6000|             |     6|         Brewis|  6000|    B|
+# +------+---------------+------+             +------+---------------+------+-----+
+
+# MYSQL ---------------------------------------------------------------------------------------------------------------------------
+
+# cur.execute("DROP TABLE IF EXISTS df_11;")
+# cur.execute("CREATE TABLE df_11 (emp_id VARCHAR(100), emp_name VARCHAR(100), salary VARCHAR(100));")
+# cur.execute("INSERT INTO df_11 VALUES \
+#     ('1', 'Jhon', '4000'), \
+#     ('2', 'Tim David', '12000'), \
+#     ('3', 'Json Bhrendroff', '7000'), \
+#     ('4', 'Jordon', '8000'), \
+#     ('5', 'Green', '14000'), \
+#     ('6', 'Brewis', '6000');")
+
+# con.commit()
+
+# cur.execute("""
+#             select 
+#               emp_id,
+#               emp_name,
+#               salary,
+#               CASE
+#                 WHEN salary < 5000 THEN 'C'
+#                 WHEN salary < 10000 THEN 'B'
+#                 ELSE 'A'
+#               END as grade
+#             from df_11
+#             """)
+
+# mysql_print()
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = (
+#     ("1", "Jhon", "4000"),
+#     ("2", "Tim David", "12000"),
+#     ("3", "Json Bhrendroff", "7000"),
+#     ("4", "Jordon", "8000"),
+#     ("5", "Green", "14000"),
+#     ("6", "Brewis", "6000"),
+# )
+# schema = "emp_id string, emp_name string, salary string"
+
+# df = spark.createDataFrame(data=data, schema=schema)
+# df.createOrReplaceTempView("df")
+
+# df.withColumn("grade", when(df.salary < 5000, "C").when(df.salary < 10000, "B").otherwise("A")).show(truncate=False)
