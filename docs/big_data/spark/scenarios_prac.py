@@ -2417,3 +2417,67 @@ spark = SparkSession.builder.getOrCreate()
 # df.filter(col("status") == "dispatched")\
 #   .filter(col("orderid").isin(*[row.orderid for row in df.filter(col("status") == "Ordered").select("orderid").collect()]))\
 #   .select("orderid", "statusdate", "status").show()
+
+# =======================================================================================================================
+# Scenario 1
+# =======================================================================================================================
+
+# +--------+---------+--------+------+-------------------+------+
+# |workerid|firstname|lastname|salary|        joiningdate|depart|
+# +--------+---------+--------+------+-------------------+------+
+# |     001|   Monika|   Arora|100000|2014-02-20 09:00:00|    HR|
+# |     002| Niharika|   Verma|300000|2014-06-11 09:00:00| Admin|
+# |     003|   Vishal| Singhal|300000|2014-02-20 09:00:00|    HR|
+# |     004|  Amitabh|   Singh|500000|2014-02-20 09:00:00| Admin|
+# |     005|    Vivek|   Bhati|500000|2014-06-11 09:00:00| Admin|
+# +--------+---------+--------+------+-------------------+------+
+#                            ||
+# 						   ||
+# +--------+---------+--------+------+-------------------+------+
+# |workerid|firstname|lastname|salary|        joiningdate|depart|
+# +--------+---------+--------+------+-------------------+------+
+# |     002| Niharika|   Verma|300000|2014-06-11 09:00:00| Admin|
+# |     003|   Vishal| Singhal|300000|2014-02-20 09:00:00|    HR|
+# |     004|  Amitabh|   Singh|500000|2014-02-20 09:00:00| Admin|
+# |     005|    Vivek|   Bhati|500000|2014-06-11 09:00:00| Admin|
+# +--------+---------+--------+------+-------------------+------+
+
+# MYSQL ---------------------------------------------------------------------------------------------------------------------------
+
+# cur.execute("DROP TABLE IF EXISTS df_1;")
+# cur.execute("CREATE TABLE df_1 (workerid int, firstname varchar(100), lastname varchar(100), salary int, joiningdate varchar(100), depart varchar(100));")
+# cur.execute("INSERT INTO df_1 VALUES \
+#             (1, 'Monika', 'Arora', 100000, '2014-02-20 09:00:00', 'HR'), \
+#             (2, 'Niharika', 'Verma', 300000, '2014-06-11 09:00:00', 'Admin'), \
+#             (3, 'Vishal', 'Singhal', 300000, '2014-02-20 09:00:00', 'HR'), \
+#             (4, 'Amitabh', 'Singh', 500000, '2014-02-20 09:00:00', 'Admin'), \
+#             (5, 'Vivek', 'Bhati', 500000, '2014-06-11 09:00:00', 'Admin'), \
+#             (6, 'Joey', 'Swole', 500000, '2014-06-11 09:00:00', 'HR');") \
+
+# con.commit()
+
+# cur.execute("""
+#             select workerid, firstname, lastname, salary, joiningdate, depart from
+#             (
+#               select *, COUNT(1) over (partition by salary) as count from df_1
+#             ) e where count > 1
+#             """)
+
+# mysql_print()
+
+# # SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = (
+#     (1, "Monika", "Arora", 100000, "2014-02-20 09:00:00", "HR"),
+#     (2, "Niharika", "Verma", 300000, "2014-06-11 09:00:00", "Admin"),
+#     (3, "Vishal", "Singhal", 300000, "2014-02-20 09:00:00", "HR"),
+#     (4, "Amitabh", "Singh", 500000, "2014-02-20 09:00:00", "Admin"),
+#     (5, "Vivek", "Bhati", 500000, "2014-06-11 09:00:00", "Admin")
+# )
+# schema = "workerid int, firstname string, lastname string, salary int, joiningdate string, depart string"
+
+# df = spark.createDataFrame(data=data, schema=schema)
+# df.createOrReplaceTempView("df")
+
+# df.withColumn("count", count(lit(1)).over(Window.partitionBy("salary"))).where("count > 1")\
+#   .select("workerid", "firstname", "lastname", "salary", "joiningdate", "depart").show()
