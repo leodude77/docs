@@ -331,21 +331,118 @@ prod = spark.createDataFrame(data3, ["id", "product"])
 # tab1.alias("df1").join(tab1.alias("df2"), col("df1.child") == col("df2.parent")).drop(col("df1.child")).show()
 
 # -----------------------------------------------------------------------------------------------------------------
-data5 = [
-    (1, "Sai"),
-    (2, "Ravi"),
-    (3, "Ranni"),
-    (5, "Radhan")
+# data5 = [
+#     (1, "Sai"),
+#     (2, "Ravi"),
+#     (3, "Ranni"),
+#     (5, "Radhan")
+# ]
+
+# tab1 = spark.createDataFrame(data5, ["id", "name"])
+
+# data6 = [
+#     (1, "Mouse"),
+#     (3, "Mobile"),
+#     (7, "Laptop")
+# ]
+
+# tab2 = spark.createDataFrame(data6, ["id", "accessory"])
+
+# (tab1.join(tab2, ["id"], "anti").show())
+
+#--------------------------------------------------------------------------------------------------------------
+# 20250308
+
+# data5 = [
+#     (1, "Sai"),
+#     (2, "Ravi"),
+#     (3, "Ranni"),
+#     (5, "Radhan")
+# ]
+
+# tab1 = spark.createDataFrame(data5, ["id", "name"])
+
+# data6 = [
+#     (1, "Mouse"),
+#     (3, "Mobile"),
+#     (7, "Laptop")
+# ]
+
+# tab2 = spark.createDataFrame(data6, ["id", "accessory"])
+# tab1.crossJoin(tab2).show()
+
+# -----------------------------------------------------------------------------------------------------------------
+
+# data = [
+#     ('sai', 'chn', 1),
+#     ('sai', 'hyd', 2),
+#     ('sai', 'chn', 2),
+#     ('sai', 'hyd', 1),
+#     ('zeyo', 'chn', 2),
+#     ('zeyo', 'hyd', 3),
+#     ('zeyo', 'chn', 2),
+#     ('zeyo', 'hyd', 1)
+
+# ]
+
+# # Create a DataFrame using the data and specifying the column names
+# df = spark.createDataFrame(data, ["name", "city", "amount"]).coalesce(1)
+
+# # Show the DataFrame
+# df.show()
+
+# print("======== SUM PER EACH NAME=========")
+# aggdf1 = df.groupBy( "name" ).agg(  sum("amount").alias("total") )
+# aggdf1.show()
+
+# print("======== SUM AND COUNT PER EACH NAME=========")
+# aggdf2 = df.groupBy("name").agg(
+
+#                                     sum("amount").alias("total")  ,
+
+#                                     count("amount").alias("cnt")
+
+# )
+# aggdf2.show()
+
+# -----------------------------------------------------------------------------------------------------------------
+
+data = [
+    ('sai', 'chn', 1),
+    ('sai', 'hyd', 2),
+    ('sai', 'chn', 2),
+    ('sai', 'hyd', 1),
+    ('zeyo', 'chn', 2),
+    ('zeyo', 'hyd', 3),
+    ('zeyo', 'chn', 2),
+    ('zeyo', 'hyd', 1)
 ]
 
-tab1 = spark.createDataFrame(data5, ["id", "name"])
+# Create a DataFrame using the data and specifying the column names
+df = spark.createDataFrame(data, ["name", "city", "amount"]).coalesce(1)
 
-data6 = [
-    (1, "Mouse"),
-    (3, "Mobile"),
-    (7, "Laptop")
-]
+# Show the DataFrame
+df.show()
 
-tab2 = spark.createDataFrame(data6, ["id", "accessory"])
+# print("======== SUM PER EACH NAME=========")
+# aggdf1 = df.groupBy( "name" ).agg(  sum("amount").alias("total") )
+# aggdf1.show()
 
-(tab1.join(tab2, ["id"], "anti").show())
+# print("======== SUM AND COUNT PER EACH NAME=========")
+# aggdf2 = df.groupBy("name").agg(
+#     sum("amount").alias("total")  ,
+#     count("amount").alias("cnt")
+# )
+# aggdf2.show()
+
+
+# print("========== SUM  per each name and city=======")
+# aggdf3 = df.groupBy( "name" , "city" ).agg(
+#                                     sum("amount").alias("total") , 
+#                                     count("amount").alias("cnt")
+#                         )
+# aggdf3.show()
+
+print("========== collect_list, group by 1 and 2 cols =======")
+df.groupBy(col("name")).agg(collect_list(df.amount)).show()
+df.groupBy(col("name"), df.city).agg(collect_list(df.amount)).show()

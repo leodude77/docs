@@ -661,6 +661,13 @@ spark = SparkSession.builder.getOrCreate()
 #             select * from df_29 where col not in (select max(col) from df_29) union
 #             select col1 as col from df_29_1 where col1 not in (select max(col) from df_29)
 # """)
+
+# cur.execute("""
+#             select col1 from df_29_1 where col1 NOT IN 
+#             (
+#               select max(col) as col from df_29
+#             )
+# """)
 # mysql_print()
 
 # SPARK ---------------------------------------------------------------------------------------------------------------------------
@@ -694,6 +701,9 @@ spark = SparkSession.builder.getOrCreate()
 
 # maxSalary = df1.selectExpr("max(col)").first()[0]
 # df1.join(df2, df1.col == df2.col1, "outer").drop("col").withColumnRenamed("col1","col").filter(~col("col").isin(maxSalary)).show()
+
+# df1 = df1.withColumn("col", expr("max(col)"))
+# df2.join(df1 , df1.col == df2.col1, "anti").show()
 
 # =======================================================================================================================
 # Scenario 28
@@ -2277,21 +2287,21 @@ spark = SparkSession.builder.getOrCreate()
 
 # SPARK ---------------------------------------------------------------------------------------------------------------------------
 
-# data = (
-#     (1, "Mark Ray", "AB"),
-#     (2, "Peter Smith", "CD"),
-#     (1, "Mark Ray", "EF"),
-#     (2, "Peter Smith", "GH"),
-#     (2, "Peter Smith", "CD"),
-#     (3, "Kate", "IJ"),
-# )
-# schema = "custid int, custname string, address string"
+data = (
+    (1, "Mark Ray", "AB"),
+    (2, "Peter Smith", "CD"),
+    (1, "Mark Ray", "EF"),
+    (2, "Peter Smith", "GH"),
+    (2, "Peter Smith", "CD"),
+    (3, "Kate", "IJ"),
+)
+schema = "custid int, custname string, address string"
 
-# df = spark.createDataFrame(data=data, schema=schema)
-# df.createOrReplaceTempView("df")
+df = spark.createDataFrame(data=data, schema=schema)
+df.createOrReplaceTempView("df")
 
-# df.distinct().groupBy(col("custid"), col("custname")).agg(collect_list(col("address")).alias("address"))\
-#   .orderBy('custid').show()
+df.distinct().groupBy(col("custid"), col("custname")).agg(collect_list(col("address")).alias("address"))\
+  .orderBy('custid').show()
 
 # =======================================================================================================================
 # Scenario 3
@@ -2481,3 +2491,4 @@ spark = SparkSession.builder.getOrCreate()
 
 # df.withColumn("count", count(lit(1)).over(Window.partitionBy("salary"))).where("count > 1")\
 #   .select("workerid", "firstname", "lastname", "salary", "joiningdate", "depart").show()
+
