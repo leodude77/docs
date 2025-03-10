@@ -2747,3 +2747,246 @@ spark = SparkSession.builder.getOrCreate()
 # df.withColumn("places_visited_indiv", explode(split(col("travel_location"), ",")))\
 #     .groupBy(col("places_visited_indiv")).agg(collect_list("name").alias("people_visited"), size(collect_list("name")).alias("no_of_people_visiting"))\
 #     .show()
+
+# =======================================================================================================================
+# Scenario 35 Q7 1
+# =======================================================================================================================
+
+# Read JSON sc_35_q7 -- Assuming
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# df = spark.read.format("json").options(multiline=True).load("./req_scenario_files/sc_35_q7.json")
+# df.createOrReplaceTempView("df")
+# df.show()
+
+# df1 = df.withColumn("emp", explode("emp"))\
+#     .select(col("emp.id").alias("id"), col("emp.name").alias("name"), col("emp.address").alias("address"))\
+#     .withColumn("address", explode("address"))\
+#     .withColumn("address_line_1", col("address.line1"))\
+#     .withColumn("address_line_2", col("address.line2"))\
+#     .drop("address")\
+#     .na.fill({'address_line_1': '', 'address_line_2': ''})
+# df1.show()
+# df1.printSchema()
+
+# =======================================================================================================================
+# Scenario 35 Q7 2
+# =======================================================================================================================
+
+# +-----+-------+------+---------+     =>>     +-----+-------+------+---------+------------+
+# |empid|empname|salary|managerid|             |empid|empname|salary|managerid|manager_name|
+# +-----+-------+------+---------+             +-----+-------+------+---------+------------+
+# |    1|    xyz| 10000|     NULL|             |    1|    xyz| 10000|     NULL|         N/A|
+# |    2|    abc| 20000|        1|             |    2|    abc| 20000|        1|         xyz|
+# |    3|   fgkb| 30000|        2|             |    3|   fgkb| 30000|        2|         abc|
+# |    4|   gfkj| 50000|        2|             |    4|   gfkj| 50000|        2|         abc|
+# +-----+-------+------+---------+             +-----+-------+------+---------+------------+
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = (
+#     (1, "xyz", 10000, None),
+#     (2, "abc", 20000, 1),
+#     (3, "fgkb", 30000, 2),
+#     (4, "gfkj", 50000, 2),
+# )
+# schema = "empid int, empname string, salary int, managerid int"
+
+# df = spark.createDataFrame(data=data, schema=schema)
+# df.createOrReplaceTempView("df")
+# df.show()
+
+# df.alias("a").join(df.alias("b"), col("a.managerid") == col("b.empid"), "left")\
+#     .withColumn("manager_name", col("b.empname"))\
+#     .select("a.*", "manager_name")\
+#     .na.fill({"manager_name": "N/A"})\
+#     .show()
+
+# =======================================================================================================================
+# Scenario 35 Q11 2
+# =======================================================================================================================
+
+# filename = "./req_scenario_files/sc_35_q11.txt"
+# fw = open("./req_scenario_files/sc_35_q11_v1.txt", "w")
+
+# with open(filename) as file:
+#     for line in file:
+#         fw.write(line.rstrip()+"\n")
+# fw.close()
+
+# spark.read.format("csv").options(delimiter='|^|', header=True)\
+#     .load("./req_scenario_files/sc_35_q11_v1.txt").show()
+
+# =======================================================================================================================
+# Scenario 35 Q13
+# =======================================================================================================================
+
+# +------+--------+------+----------+
+# |emp_id|emp_name|salary|manager_id|
+# +------+--------+------+----------+     =>>     +----------+------------+----------------------------+
+# |    10|    Anil| 50000|        18|             |manager_id|manager_name|Average_Salary_Under_Manager|
+# |    11|   Vikas| 75000|        16|             +----------+------------+----------------------------+
+# |    12|   Nisha| 40000|        18|             |        16|      Rajesh|                       75000|
+# |    13|   Nidhi| 60000|        17|             |        17|       Raman|                       60000|
+# |    14|   Priya| 80000|        18|             |        18|     Santosh|                       53750|
+# |    15|   Mohit| 45000|        18|             +----------+------------+----------------------------+
+# |    16|  Rajesh| 90000|        16|
+# |    17|   Raman| 55000|        16|
+# |    18| Santosh| 65000|        17|
+# +------+--------+------+----------+
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = (
+#     (10, "Anil", 50000, 18),
+#     (11, "Vikas", 75000, 16),
+#     (12, "Nisha", 40000, 18),
+#     (13, "Nidhi", 60000, 17),
+#     (14, "Priya", 80000, 18),
+#     (15, "Mohit", 45000, 18),
+#     (16, "Rajesh", 90000, 16),
+#     (17, "Raman", 55000, 16),
+#     (18, "Santosh", 65000, 17),
+# )
+# schema = "emp_id int, emp_name string, salary int, manager_id int"
+
+# df = spark.createDataFrame(data=data, schema=schema)
+# df.createOrReplaceTempView("df")
+# df.show()
+
+# managers_id_df = df.select(col("manager_id").alias("id")).distinct()
+# managers_id_df.show()
+
+# df.join(managers_id_df, df.emp_id == managers_id_df.id, "anti").groupBy("manager_id")\
+#     .agg(avg("salary").alias("Average_Salary_Under_Manager")).alias("avgdf")\
+#     .join(df, col("avgdf.manager_id") == df.emp_id )\
+#     .selectExpr("emp_id as manager_id", "emp_name as manager_name", "cast(Average_Salary_Under_Manager as int) as Average_Salary_Under_Manager").show()
+
+# =======================================================================================================================
+# Scenario 35 Q14
+# =======================================================================================================================
+
+# +------+     =>>     +------+
+# |random|             |random|
+# +------+             +------+
+# |     1|             | 00001|
+# |    01|             | 00001|
+# |   011|             | 00011|
+# |  0111|             | 00111|
+# | 01111|             | 01111|
+# +------+             +------+
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = (
+#     ("1",),
+#     ("01",),
+#     ("011",),
+#     ("0111",),
+#     ("01111",),
+# )
+# schema = "random string"
+
+# df = spark.createDataFrame(data=data, schema=schema)
+# df.createOrReplaceTempView("df")
+# df.show()
+
+# df\
+#     .withColumn("random", expr("concat( repeat( '0' , (5 - length(random))), random)"))\
+#     .show()
+
+# =======================================================================================================================
+# Scenario 35 Q16
+# =======================================================================================================================
+
+# +----------+     =>>     +--------------+
+# |    random|             |        random|
+# +----------+             +--------------+
+# |aabbccabca|             |a2b2c2a1b1c1a1|
+# +----------+             +--------------+
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = (
+#     ("aabbccabca",),
+# )
+# schema = "random string"
+
+# df = spark.createDataFrame(data=data, schema=schema)
+# df.createOrReplaceTempView("df")
+# df.show()
+
+# @udf(returnType=StringType())
+# def count_consecutive_characters(s):
+#     result = ""
+#     current_char = s[0]
+#     count = 1
+#     for char in s[1:]:
+#         if char == current_char:
+#             count += 1
+#         else:
+#             result += current_char + str(count)
+#             current_char = char
+#             count = 1
+#     result += current_char + str(count)
+#     return result
+
+# df.withColumn("random", count_consecutive_characters(df.random)).show()
+
+# =======================================================================================================================
+# Scenario 35 Q17 3
+# =======================================================================================================================
+
+# +---+-----------+      =>>     +------------------------+
+# | id|  team_name|              |matches                 |
+# +---+-----------+              +------------------------+
+# |  1|      India|              |India vs Australia      |
+# |  2|  Australia|              |India vs England        |
+# |  3|    England|              |India vs New Zealand    |
+# |  4|New Zealand|              |Australia vs England    |
+# +---+-----------+              |Australia vs New Zealand|
+#                                |England vs New Zealand  |
+#                                +------------------------+
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = (
+#     (1, "India"),
+#     (2, "Australia"),
+#     (3, "England"),
+#     (4, "New Zealand"),
+# )
+# schema = "id int, team_name string"
+
+# df = spark.createDataFrame(data=data, schema=schema)
+# df.createOrReplaceTempView("df")
+# df.show()
+
+# df.alias("a").join(df.alias("b"), (col("a.id") < col("b.id")), "inner")\
+#     .select(concat(col("a.team_name"), lit(" vs "), col("b.team_name")).alias("matches"))\
+#     .select("matches")\
+#     .show(truncate=False)
+
+def print_matchups(list1):
+    i = 0
+    j = 1
+    while i < j:
+        print(listMap[list1[i]] + " vs " + listMap[list1[j]])
+        if (j == (len(list1) - 1)) :
+            i += 1
+            if i == j:
+                break
+            j = i + 1
+            continue
+        j += 1
+
+
+list1= ["ind", "aus", "eng", "nz"]
+listMap = {
+    "ind": "India",
+    "aus": "Australia",
+    "eng": "England",
+    "nz": "New Zealand"
+}
+print_matchups(list1)
