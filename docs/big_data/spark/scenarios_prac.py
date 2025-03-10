@@ -16,14 +16,14 @@ import sys
 #         print(x)
         
 # Using Mysql
-import mysql.connector
-con = mysql.connector.connect(
-  host="localhost",
-  user="root",
-  password="pass",
-  database="scenarios"
-)
-cur = con.cursor()
+# import mysql.connector
+# con = mysql.connector.connect(
+#   host="localhost",
+#   user="root",
+#   password="pass",
+#   database="scenarios"
+# )
+# cur = con.cursor()
 def mysql_print():
   print()
   print (cur.column_names)
@@ -2287,21 +2287,21 @@ spark = SparkSession.builder.getOrCreate()
 
 # SPARK ---------------------------------------------------------------------------------------------------------------------------
 
-data = (
-    (1, "Mark Ray", "AB"),
-    (2, "Peter Smith", "CD"),
-    (1, "Mark Ray", "EF"),
-    (2, "Peter Smith", "GH"),
-    (2, "Peter Smith", "CD"),
-    (3, "Kate", "IJ"),
-)
-schema = "custid int, custname string, address string"
+# data = (
+#     (1, "Mark Ray", "AB"),
+#     (2, "Peter Smith", "CD"),
+#     (1, "Mark Ray", "EF"),
+#     (2, "Peter Smith", "GH"),
+#     (2, "Peter Smith", "CD"),
+#     (3, "Kate", "IJ"),
+# )
+# schema = "custid int, custname string, address string"
 
-df = spark.createDataFrame(data=data, schema=schema)
-df.createOrReplaceTempView("df")
+# df = spark.createDataFrame(data=data, schema=schema)
+# df.createOrReplaceTempView("df")
 
-df.distinct().groupBy(col("custid"), col("custname")).agg(collect_list(col("address")).alias("address"))\
-  .orderBy('custid').show()
+# df.distinct().groupBy(col("custid"), col("custname")).agg(collect_list(col("address")).alias("address"))\
+#   .orderBy('custid').show()
 
 # =======================================================================================================================
 # Scenario 3
@@ -2492,3 +2492,258 @@ df.distinct().groupBy(col("custid"), col("custname")).agg(collect_list(col("addr
 # df.withColumn("count", count(lit(1)).over(Window.partitionBy("salary"))).where("count > 1")\
 #   .select("workerid", "firstname", "lastname", "salary", "joiningdate", "depart").show()
 
+# =======================================================================================================================
+# Scenario 35 Q21
+# =======================================================================================================================
+
+# +---+---------+--------+--------+
+# | id|   airway|     src|    dest|     =>>     +---------+--------+-----------+
+# +---+---------+--------+--------+             |   airway|  Source|Destination|
+# |  1|   Indigo|   India|  Bhutan|             +---------+--------+-----------+
+# |  2| Air Asia|     Aus|   India|             |   Indigo|   India|   SriLanka|
+# |  3|   Indigo|  Bhutan|   Nepal|             | Air Asia|     Aus|      Japan|
+# |  4|spice jet|SriLanka|  Bhutan|             |spice jet|SriLanka|      Nepal|
+# |  5|   Indigo|   Nepal|SriLanka|             +---------+--------+-----------+
+# |  6| Air Asia|   India|   Japan|
+# |  7|spice jet|  Bhutan|   Nepal|
+# +---+---------+--------+--------+
+
+# MYSQL ---------------------------------------------------------------------------------------------------------------------------
+
+# cur.execute("DROP TABLE IF EXISTS flight;")
+# cur.execute("CREATE TABLE flight (id int, airway varchar(100), src varchar(100), dest varchar(100));")
+# cur.execute("""INSERT INTO flight VALUES
+#     (1,	'Indigo', 'India', 'Bhutan' ),
+#     (2,	'Air Asia', 'Aus', 'India'),
+#     (3,	'Indigo', 'Bhutan', 'Nepal'),
+#     (4,	'spice jet', 'SriLanka', 'Bhutan'),
+#     (5,	'Indigo', 'Nepal', 'SriLanka'),
+#     (6,	'Air Asia', 'India', 'Japan'),
+#     (7,	'spice jet', 'Bhutan', 'Nepal');""")
+
+# con.commit()
+
+# cur.execute("""
+#             WITH RECURSIVE FlightPath AS (
+#     -- Anchor member: Start with the first flight for each airway
+#     SELECT
+#         id,
+#         airway,
+#         src,
+#         dest,
+#         src AS start_src,
+#         dest AS final_dest
+#     FROM
+#         flight
+#     WHERE
+#         src NOT IN (SELECT dest FROM flight) -- Find starting points (sources not used as destinations)
+
+#     UNION ALL
+
+#     -- Recursive member: Join the next flight in the sequence
+#     SELECT
+#         f.id,
+#         f.airway,
+#         f.src,
+#         f.dest,
+#         fp.start_src,
+#         f.dest AS final_dest
+#     FROM
+#         flight f
+#     INNER JOIN
+#         FlightPath fp ON f.airway = fp.airway AND f.src = fp.dest
+# )
+# SELECT
+#     airway AS Flight,
+#     start_src AS Source,
+#     final_dest AS Destination
+# FROM
+#     FlightPath
+# WHERE
+#     final_dest NOT IN (SELECT src FROM flight) -- Filter to get the final destination
+# ORDER BY
+#     airway;
+#             """)
+# mysql_print()
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = (
+#     (1,	'Indigo', 'India', 'Bhutan' ),
+#     (2,	'Air Asia', 'Aus', 'India'),
+#     (3,	'Indigo', 'Bhutan', 'Nepal'),
+#     (4,	'spice jet', 'SriLanka', 'Bhutan'),
+#     (5,	'Indigo', 'Nepal', 'SriLanka'),
+#     (6,	'Air Asia', 'India', 'Japan'),
+#     (7,	'spice jet', 'Bhutan', 'Nepal')
+# )
+# schema = "id int, airway string, src string, dest string"
+
+# df = spark.createDataFrame(data=data, schema=schema)
+# df.createOrReplaceTempView("df")
+
+# df.show()
+# df.groupBy("airway").agg(collect_list('src').alias("Source"), collect_list('dest').alias("Destination"))\
+#     .withColumn("Source1", array_except(col("Source"), col("Destination"))[0])\
+#     .withColumn("Dest1", array_except(col("Destination"), col("Source"))[0])\
+#     .drop("Source").drop("Destination")\
+#     .withColumnRenamed("Source1", "Source")\
+#     .withColumnRenamed("Dest1", "Destination")\
+#     .show()
+
+# =======================================================================================================================
+# Scenario 35 Q1
+# =======================================================================================================================
+
+# +---+--------------------+
+# | id|              splits|     =>>     +---+---------------+
+# +---+--------------------+             | id|count_of_splits|
+# |  1|         p1,p2,p3,p4|             +---+---------------+
+# |  2|                  p1|             |  4|              7|
+# |  3|               p1,p2|             +---+---------------+
+# |  4|p1,p2,p3,p4,p5,p6,p7|
+# +---+--------------------+
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = (
+#  (1,"p1,p2,p3,p4"),
+#  (2,"p1"),
+#  (3,"p1,p2"),
+#  (4,"p1,p2,p3,p4,p5,p6,p7"),
+# )
+# schema = "id int, splits string"
+
+# df = spark.createDataFrame(data=data, schema=schema)
+# df.createOrReplaceTempView("df")
+
+# df.show()
+# maxsplitsdf = df.withColumn("count_of_splits", size(split(df.splits, ',')))
+
+# maxsplitsdf.alias("a")\
+#     .join(maxsplitsdf.select(max("count_of_splits").alias("Max")).alias("b"), col("count_of_splits") == col("b.Max"))\
+#         .drop("splits", "max").show()
+
+# =======================================================================================================================
+# Scenario 35 Q4
+# =======================================================================================================================
+
+# +-------+----------------------------------------+     =>>     +-------+--------+---------+------+
+# |stockid|predictedprice                          |             |stockid|BuyPrice|SellPrice|Profit|
+# +-------+----------------------------------------+             +-------+--------+---------+------+
+# |RIL    |[1000, 1005, 1090, 1200, 1000, 900, 890]|             |    RIL|    1000|     1200|   200|
+# |HDFC   |[890, 940, 810, 730, 735, 960, 980]     |             |   HDFC|     730|      980|   250|
+# |INFY   |[1001, 902, 1000, 990, 1230, 1100, 1200]|             |   INFY|     902|     1230|   328|
+# +-------+----------------------------------------+             +-------+--------+---------+------+
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = (
+#     ("RIL", [1000,1005,1090,1200,1000,900,890]),
+#     ("HDFC", [890,940,810,730,735,960,980]),
+#     ("INFY", [1001,902,1000,990,1230,1100,1200]),
+# )
+# schema = "stockid string, predictedprice array<int>"
+
+# df = spark.createDataFrame(data=data, schema=schema)
+# df.createOrReplaceTempView("df")
+# df.show(truncate=False)
+
+# @udf(returnType=ArrayType(IntegerType()))
+# def get_max_min_seq(list_arr):
+    
+#     if len(list_arr) < 2:
+#         return []
+
+#     max_diff = list_arr[1] - list_arr[0]
+#     min_element = list_arr[0]
+#     max_element = list_arr[1]
+#     n_info = [max_diff, min_element, max_element]
+#     # for i in range(len(list_arr)):
+#     #     for j in range(i+1, len(list_arr)):
+#     #         if list_arr[j] - list_arr[i] > max_diff:
+#     #             max_diff = list_arr[j] - list_arr[i]
+#     #             max_element = list_arr[i] if list_arr[i] > list_arr[j] else list_arr[j]
+#     #             min_element = max_element - max_diff
+    
+#     # Main
+#     for num in list_arr:
+#         if num - min_element > max_diff:
+#             max_diff = num - min_element
+#             max_element = num
+#             n_info = [max_diff, min_element, max_element]
+        
+#         # if ((num < min_element) & (num != list_arr[-1])):
+#         if ( num < min_element ):
+#             min_element = num
+                
+#     return n_info
+
+# # df.withColumn("predictedprice", explode(col("predictedprice")))\
+# #     .groupBy("stockid")\
+# #     .agg(max("predictedprice").alias("SellPrice"), min("predictedprice").alias("BuyPrice"), \
+# #         (max(col("predictedprice")) - min(col("predictedprice"))).alias("Profit")).show()
+
+# # Ans
+# ansdf = df.withColumn("max_min", get_max_min_seq(col("predictedprice")))
+# ansdf.printSchema()
+
+# ansdf\
+#     .withColumn("BuyPrice", col("max_min")[1])\
+#     .withColumn("SellPrice", col("max_min")[2])\
+#     .withColumn("Profit", col("max_min")[0]).drop("max_min", "predictedprice").show()
+
+# =======================================================================================================================
+# Scenario 35 Q5
+# =======================================================================================================================
+
+# +-------+------------------------+---+     =>>     +--------------------+--------------------+---------------------+
+# |name   |travel_location         |age|             |places_visited_indiv|      people_visited|no_of_people_visiting|
+# +-------+------------------------+---+             +--------------------+--------------------+---------------------+
+# |ravi   |pune,delhi,chennai,noida|32 |             |             chennai|[ravi, gautham, s...|                    3|
+# |gautham|delhi,chennai           |30 |             |               delhi|[ravi, gautham, t...|                    3|
+# |mary   |noida,pune              |35 |             |               noida|[ravi, mary, shan...|                    3|
+# |thomas |delhi,pune              |31 |             |                pune|[ravi, mary, thomas]|                    3|
+# |shankar|chennai,noida           |30 |             +--------------------+--------------------+---------------------+
+# +-------+------------------------+---+
+#                                   ___  ____  
+#                                  / _ \|  _ \ 
+#                                 | | | | |_) |
+#                                 | |_| |  _ < 
+#                                  \___/|_| \_\
+
+# +-------+------------------------+---+
+# |name   |travel_location         |age|
+# +-------+------------------------+---+      =>>     +----+--------------------+---+
+# |ravi   |pune,delhi,chennai,noida|32 |              |name|     travel_location|age|
+# |gautham|delhi,chennai           |30 |              +----+--------------------+---+
+# |mary   |noida,pune              |35 |              |ravi|pune,delhi,chenna...| 32|
+# |thomas |delhi,pune              |31 |              +----+--------------------+---+
+# |shankar|chennai,noida           |30 |
+# +-------+------------------------+---+
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = (
+#     ("ravi", "pune,delhi,chennai,noida", 32),
+#     ("gautham", "delhi,chennai", 30),
+#     ("mary", "noida,pune", 35),
+#     ("thomas", "delhi,pune", 31),
+#     ("shankar", "chennai,noida", 30),
+# )
+# schema = "name string, travel_location string, age int"
+
+# df = spark.createDataFrame(data=data, schema=schema)
+# df.createOrReplaceTempView("df")
+# df.show(truncate=False)
+
+# no_of_cols_df = df.withColumn("no_of_places_visited", size(split(col("travel_location"), ",")))
+# max_places_visited = no_of_cols_df.selectExpr("max(no_of_places_visited)").first()[0]
+
+# no_of_cols_df.filter(max_places_visited == col("no_of_places_visited")).drop("no_of_places_visited").show()
+
+# OR 
+
+# df.withColumn("places_visited_indiv", explode(split(col("travel_location"), ",")))\
+#     .groupBy(col("places_visited_indiv")).agg(collect_list("name").alias("people_visited"), size(collect_list("name")).alias("no_of_people_visiting"))\
+#     .show()
