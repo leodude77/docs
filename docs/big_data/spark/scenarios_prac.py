@@ -16,14 +16,14 @@ import sys
 #         print(x)
         
 # Using Mysql
-# import mysql.connector
-# con = mysql.connector.connect(
-#   host="localhost",
-#   user="root",
-#   password="pass",
-#   database="scenarios"
-# )
-# cur = con.cursor()
+import mysql.connector
+con = mysql.connector.connect(
+  host="localhost",
+  user="root",
+  password="pass",
+  database="scenarios"
+)
+cur = con.cursor()
 def mysql_print():
   print()
   print (cur.column_names)
@@ -2968,25 +2968,311 @@ spark = SparkSession.builder.getOrCreate()
 #     .select("matches")\
 #     .show(truncate=False)
 
-def print_matchups(list1):
-    i = 0
-    j = 1
-    while i < j:
-        print(listMap[list1[i]] + " vs " + listMap[list1[j]])
-        if (j == (len(list1) - 1)) :
-            i += 1
-            if i == j:
-                break
-            j = i + 1
-            continue
-        j += 1
+# def print_matchups(list1):
+#     i = 0
+#     j = 1
+#     while i < j:
+#         print(listMap[list1[i]] + " vs " + listMap[list1[j]])
+#         if (j == (len(list1) - 1)) :
+#             i += 1
+#             if i == j:
+#                 break
+#             j = i + 1
+#             continue
+#         j += 1
 
 
-list1= ["ind", "aus", "eng", "nz"]
-listMap = {
-    "ind": "India",
-    "aus": "Australia",
-    "eng": "England",
-    "nz": "New Zealand"
-}
-print_matchups(list1)
+# list1= ["ind", "aus", "eng", "nz"]
+# listMap = {
+#     "ind": "India",
+#     "aus": "Australia",
+#     "eng": "England",
+#     "nz": "New Zealand"
+# }
+# print_matchups(list1)
+
+# =======================================================================================================================
+# Scenario 35 Q20
+# =======================================================================================================================
+
+# ('number',)     =>>     ('missing_number',)
+# (1,)                    (2,)
+# (3,)                    (4,)
+# (5,)                    (7,)
+# (6,)                    (9,)
+# (8,)
+# (10,)
+
+
+# MYSQL ---------------------------------------------------------------------------------------------------------------------------
+
+# cur.execute("DROP TABLE IF EXISTS Numbers;")
+# cur.execute("CREATE TABLE Numbers (number INT NOT Null);")
+# cur.execute("insert into Numbers  values (1),(3),(5),(6),(8),(10);")
+
+# con.commit()
+
+# cur.execute("""
+#             select missing_number from (
+#                 select *, (case when (number - cast(lagger as SIGNED)) = 2 then (lagger + 1) else -1 end ) as missing_number from
+#                 ( select *, LAG(number) over (order by number) as lagger from Numbers ) e
+#             ) f where missing_number <> -1
+#             """)
+# mysql_print()
+
+# # Using recursive cte
+# cur.execute(" select * from Numbers")
+# mysql_print()
+# cur.execute("""
+#                 with RECURSIVE Realseries as (
+#                     select min(number) as number from Numbers
+                    
+#                     UNION ALL
+                    
+#                     select number + 1
+#                     from Realseries
+#                     where number + 1 <= ( select max(number) from Numbers )
+#                 )
+                
+#                 select number as missing_number from Realseries where
+#                 number NOT IN ( select * from Numbers)
+#             """)
+# mysql_print()
+
+# =======================================================================================================================
+# Scenario 35 Q22
+# =======================================================================================================================
+
+# ('Id', 'dated', 'item')                             =>>     ('dated', 'item')
+# (1, datetime.date(2020, 1, 1), 'apple')                     (datetime.date(2020, 1, 1), 'apple')
+# (2, datetime.date(2020, 1, 1), 'apple')                     (datetime.date(2020, 1, 1), 'pear')
+# (3, datetime.date(2020, 1, 1), 'pear')                      (datetime.date(2020, 1, 2), 'pear')
+# (4, datetime.date(2020, 1, 1), 'pear')                      (datetime.date(2020, 1, 3), 'Banana')
+# (5, datetime.date(2020, 1, 2), 'pear')
+# (6, datetime.date(2020, 1, 2), 'pear')
+# (7, datetime.date(2020, 1, 2), 'pear')
+# (8, datetime.date(2020, 1, 2), 'orange')
+# (9, datetime.date(2020, 1, 3), 'Banana')
+
+# ------------------------------------------------------------------------------------------------------------------------
+
+# ('Id', 'FName', 'LName', 'PhoneNumber', 'ManagerId', 'DepartmentId', 'Salary', 'HireDate')
+# (1, 'James', 'Smith', '1234567890', None, 1, 13000, datetime.datetime(2002, 1, 1, 0, 0))
+# (2, 'John', 'Johnson', '2468101214', 1, 3, 400, datetime.datetime(2005, 3, 23, 0, 0))
+# (3, 'Michael', 'Williams', '1357911131', 1, 2, 16000, datetime.datetime(2009, 5, 12, 0, 0))
+# (4, 'John', 'Smith', '1212121212', 2, 1, 500, datetime.datetime(2016, 7, 24, 0, 0))
+# (5, 'James', 'Williams', '1234567891', None, 1, 5000, datetime.datetime(2012, 1, 1, 0, 0))
+# (6, 'John', 'Williams', '2468101212', 3, 1, 3400, datetime.datetime(2015, 3, 23, 0, 0))
+# (7, 'Smith', 'Williams', '1357911133', 4, 2, 6700, datetime.datetime(2019, 5, 12, 0, 0))
+# (8, 'Michael', 'Smith', '1212121214', 2, 3, 1500, datetime.datetime(2006, 7, 24, 0, 0))
+# (9, 'Michael', 'Johnson', '1357911135', 1, 2, 600, datetime.datetime(2009, 5, 12, 0, 0))
+# (10, 'Johnathon', 'Smith', '1212121216', 2, 1, 2500, datetime.datetime(2020, 7, 24, 0, 0))
+
+
+#      _ _   
+#     | | |  
+#     | | |  
+#     | | |  
+#   __| | |__
+#   \ \_|_/ /
+#    \ \ / / 
+#     \ V /  
+#      \_/   
+
+
+# ('id', 'Full_Name', 'ManagerId', 'first_hire_date')
+# (1, 'James Smith', 1, datetime.datetime(2002, 1, 1, 0, 0))
+# (4, 'John Smith', 2, datetime.datetime(2002, 1, 1, 0, 0))
+# (5, 'James Williams', 1, datetime.datetime(2002, 1, 1, 0, 0))
+# (6, 'John Williams', 3, datetime.datetime(2002, 1, 1, 0, 0))
+# (10, 'Johnathon Smith', 2, datetime.datetime(2002, 1, 1, 0, 0))
+# (3, 'Michael Williams', 1, datetime.datetime(2009, 5, 12, 0, 0))        
+# (7, 'Smith Williams', 4, datetime.datetime(2009, 5, 12, 0, 0))
+# (9, 'Michael Johnson', 1, datetime.datetime(2009, 5, 12, 0, 0))
+# (2, 'John Johnson', 1, datetime.datetime(2005, 3, 23, 0, 0))
+# (8, 'Michael Smith', 2, datetime.datetime(2005, 3, 23, 0, 0))
+
+# MYSQL ---------------------------------------------------------------------------------------------------------------------------
+
+# cur.execute("DROP TABLE IF EXISTS Employees")
+# cur.execute("DROP TABLE IF EXISTS Departments;")
+# cur.execute("DROP TABLE IF EXISTS Items;")
+
+# cur.execute("""
+#             CREATE TABLE Departments (
+#                 Id INT NOT NULL AUTO_INCREMENT,
+#                 Name VARCHAR(25) NOT NULL,
+#                 PRIMARY KEY(Id)
+#             );
+#             """)
+# cur.execute("""
+#             INSERT INTO Departments
+#                 (Id, Name)
+#             VALUES
+#                 (1, 'HR'),
+#                 (2, 'Sales'),
+#                 (3, 'Tech')
+#             ;
+#             """)
+
+# cur.execute("""
+#             CREATE TABLE Items (
+#                 Id INT NOT Null AUTO_INCREMENT,
+#                 dated DATE NOT NULL,
+#                 item VARCHAR(25) NOT NULL,
+#                 PRIMARY KEY (Id)
+#             );
+#             """)
+# cur.execute("""
+#                 INSERT INTO Items 
+#                     (dated, item)
+#                 VALUES
+#                     (STR_TO_DATE('01-01-2020','%m-%d-%Y'), 'apple'),
+#                     (STR_TO_DATE('01-01-2020','%m-%d-%Y'), 'apple'),
+#                     (STR_TO_DATE('01-01-2020','%m-%d-%Y'), 'pear'),
+#                     (STR_TO_DATE('01-01-2020','%m-%d-%Y'), 'pear'),
+#                     (STR_TO_DATE('01-02-2020','%m-%d-%Y'), 'pear'),
+#                     (STR_TO_DATE('01-02-2020','%m-%d-%Y'), 'pear'),
+#                     (STR_TO_DATE('01-02-2020','%m-%d-%Y'), 'pear'),
+#                     (STR_TO_DATE('01-02-2020','%m-%d-%Y'), 'orange'),
+#                     (STR_TO_DATE('01-03-2020', '%m-%d-%Y'), 'Banana')
+#                 ;
+#             """)
+
+# cur.execute("""
+#             CREATE TABLE Employees (
+#                 Id INT NOT NULL AUTO_INCREMENT,
+#                 FName VARCHAR(35) NOT NULL,
+#                 LName VARCHAR(35) NOT NULL,
+#                 PhoneNumber VARCHAR(11),
+#                 ManagerId INT,
+#                 DepartmentId INT NOT NULL,
+#                 Salary INT NOT NULL,
+#                 HireDate DATETIME NOT NULL,
+#                 PRIMARY KEY(Id),
+#                 FOREIGN KEY (ManagerId) REFERENCES Employees(Id),
+#                 FOREIGN KEY (DepartmentId) REFERENCES Departments(Id)
+#             );
+#             """)
+# cur.execute("""
+#             INSERT INTO Employees
+#                 (Id, FName, LName, PhoneNumber, ManagerId, DepartmentId, Salary, HireDate)
+#             VALUES
+#                 (1, 'James', 'Smith', 1234567890, NULL, 1, 13000, str_to_date('01-01-2002', '%d-%m-%Y')),
+#                 (2, 'John', 'Johnson', 2468101214, '1', 3, 400, str_to_date('23-03-2005', '%d-%m-%Y')),
+#                 (3, 'Michael', 'Williams', 1357911131, '1', 2, 16000, str_to_date('12-05-2009', '%d-%m-%Y')),
+#                 (4, 'John', 'Smith', 1212121212, '2', 1, 500, str_to_date('24-07-2016', '%d-%m-%Y')),
+#                 (5, 'James', 'Williams', 1234567891, NULL, 1, 5000, str_to_date('01-01-2012', '%d-%m-%Y')),
+#                 (6, 'John', 'Williams', 2468101212, '3', 1, 3400, str_to_date('23-03-2015', '%d-%m-%Y')),
+#                 (7, 'Smith', 'Williams', 1357911133, '4', 2, 6700, str_to_date('12-05-2019', '%d-%m-%Y')),
+#                 (8, 'Michael', 'Smith', 1212121214, '2', 3, 1500, str_to_date('24-07-2006', '%d-%m-%Y')),
+#                 (9, 'Michael', 'Johnson', 1357911135, '1', 2, 600, str_to_date('12-05-2009', '%d-%m-%Y')),
+#                 (10, 'Johnathon', 'Smith', 1212121216, '2', 1, 2500, str_to_date('24-07-2020', '%d-%m-%Y'));
+#             """)
+
+# con.commit()
+
+# cur.execute("""
+#             select id, concat(Fname, ' ', Lname) as Full_Name, 
+#                 case when ManagerId IS NULL then DepartmentId else ManagerId end as ManagerId,
+#                 MIN(HireDate) over (partition by DepartmentId) as first_hire_date
+#             from Employees
+#             """)
+# mysql_print()
+
+# cur.execute("""
+#             select dated, item from (
+#                 select *, DENSE_RANK() over (partition by dated order by count desc) as ranker from (
+#                     select dated, item, count(1) as count from Items group by item, dated
+#                 ) e
+#             ) f where ranker = 1
+#             """)
+# mysql_print()
+
+# =======================================================================================================================
+# Scenario 35 Q23
+# =======================================================================================================================
+
+# +---+-------+-----+      =>>     +------+
+# | id|formula|value|              |result|
+# +---+-------+-----+              +------+
+# |  1|    1+4|   10|              |    50|
+# |  2|    2-3|   30|              |   -20|
+# |  3|    2+4|   50|              |    70|
+# |  4|    2+1|   40|              |    40|
+# +---+-------+-----+              +------+
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+data = (
+    (1, "1+4", 10),
+    (2, "2-3", 30),
+    (3, "2+4", 50),
+    (4, "2+1", 40)
+)
+schema = "id int, formula string, value int"
+
+df = spark.createDataFrame(data=data, schema=schema)
+df.createOrReplaceTempView("df")
+df.show()
+
+import re
+@udf
+def get_result(str1, ids_ref, vals_ref):
+    pattern = "(?<=\d)\s*([\+\-\*\/])\s*(?=\d)"
+    match = re.search(pattern, str1)
+    if match:
+        operator = match.group()
+        id1 = ids_ref.index(int(str1.split(operator)[0]))
+        val1 = vals_ref[id1]
+        id2 = ids_ref.index(int(str1.split(operator)[1]))
+        val2 = vals_ref[id2]
+        string_to_eval = str(val1) + str(operator) + str(val2)
+        return eval(string_to_eval)
+    else:
+        return None
+
+df.crossJoin(df.agg(collect_list("id").alias("id_ref"), collect_list("value").alias("val_ref")))\
+    .withColumn("result", get_result(df.formula, col("id_ref"), col("val_ref"))).select("result").show()
+
+# =======================================================================================================================
+# Scenario 20250311
+# =======================================================================================================================
+
+# +----------+----------+
+# | sell_date|   product|      =>>     +----------+--------------------------------+---------+
+# +----------+----------+              |sell_date |products                        |null_sell|
+# |2020-05-30| Headphone|              +----------+--------------------------------+---------+
+# |2020-06-01|    Pencil|              |2020-05-30|[Headphone, Basketball, T-Shirt]|3        |
+# |2020-06-02|      Mask|              |2020-06-01|[Pencil, Book]                  |2        |
+# |2020-05-30|Basketball|              |2020-06-02|[Mask, Mask]                    |2        |
+# |2020-06-01|      Book|              +----------+--------------------------------+---------+
+# |2020-06-02|      Mask|
+# |2020-05-30|   T-Shirt|
+# +----------+----------+
+
+# MYSQL ---------------------------------------------------------------------------------------------------------------------------
+
+# cur.execute("DROP TABLE IF EXISTS df;")
+# cur.execute("CREATE TABLE df (sell_date varchar(100), product varchar(100));")
+# cur.execute("INSERT INTO df VALUES \
+#             ('2020-05-30','Headphone'),('2020-06-01','Pencil'),('2020-06-02','Mask'),('2020-05-30','Basketball'),('2020-06-01','Book'),('2020-06-02','Mask'),('2020-05-30','T-Shirt');")
+# con.commit()
+
+# cur.execute("""
+#             select sell_date, JSON_ARRAYAGG(product) as products, count(1) as 'null_sell'
+#             from df group by sell_date
+#             order by null_sell desc
+#             """)
+# mysql_print()
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = [('2020-05-30','Headphone'),('2020-06-01','Pencil'),('2020-06-02','Mask'),('2020-05-30','Basketball'),('2020-06-01','Book'),('2020-06-02','Mask'),('2020-05-30','T-Shirt')]
+# columns = ["sell_date",'product']
+
+# df = spark.createDataFrame(data,schema=columns)
+# df.show()
+
+# df.groupBy("sell_date").agg(collect_list(df.product).alias("products"),\
+#     count(lit(1)).alias("null_sell")).orderBy(col("null_sell").desc()).show(truncate=False)
