@@ -3204,36 +3204,45 @@ spark = SparkSession.builder.getOrCreate()
 
 # SPARK ---------------------------------------------------------------------------------------------------------------------------
 
-data = (
-    (1, "1+4", 10),
-    (2, "2-3", 30),
-    (3, "2+4", 50),
-    (4, "2+1", 40)
-)
-schema = "id int, formula string, value int"
+# data = (
+#     (1, "1+4", 10),
+#     (2, "2-3", 30),
+#     (3, "2+4", 50),
+#     (4, "2+1", 40)
+# )
+# schema = "id int, formula string, value int"
 
-df = spark.createDataFrame(data=data, schema=schema)
-df.createOrReplaceTempView("df")
-df.show()
+# df = spark.createDataFrame(data=data, schema=schema)
+# df.createOrReplaceTempView("df")
+# df.show()
 
-import re
-@udf
-def get_result(str1, ids_ref, vals_ref):
-    pattern = "(?<=\d)\s*([\+\-\*\/])\s*(?=\d)"
-    match = re.search(pattern, str1)
-    if match:
-        operator = match.group()
-        id1 = ids_ref.index(int(str1.split(operator)[0]))
-        val1 = vals_ref[id1]
-        id2 = ids_ref.index(int(str1.split(operator)[1]))
-        val2 = vals_ref[id2]
-        string_to_eval = str(val1) + str(operator) + str(val2)
-        return eval(string_to_eval)
-    else:
-        return None
+# import re
+# @udf(returnType=IntegerType())
+# def get_result(str1, ids_ref, vals_ref):
+#     pattern = "(?<=\d)\s*([\+\-\*\/])\s*(?=\d)"
+#     match = re.search(pattern, str1)
+#     if match:
+#         operator = match.group()
+#         id1 = ids_ref.index(int(str1.split(operator)[0]))
+#         val1 = vals_ref[id1]
+#         id2 = ids_ref.index(int(str1.split(operator)[1]))
+#         val2 = vals_ref[id2]
+#         string_to_eval = str(val1) + str(operator) + str(val2)
+#         return eval(string_to_eval)
+#     else:
+#         return None
 
-df.crossJoin(df.agg(collect_list("id").alias("id_ref"), collect_list("value").alias("val_ref")))\
-    .withColumn("result", get_result(df.formula, col("id_ref"), col("val_ref"))).select("result").show()
+
+# df.crossJoin(df.agg(collect_list("id").alias("id_ref"), collect_list("value").alias("val_ref")))\
+#     .withColumn("result", get_result(df.formula, col("id_ref"), col("val_ref"))).select("result").show()
+
+# # Without cross joining and storing the ids and values in a variable
+# ids_ref = df.agg(collect_list("id").alias("id_ref"), collect_list("value").alias("val_ref")).first()[0]
+# vals_ref = df.agg(collect_list("id").alias("id_ref"), collect_list("value").alias("val_ref")).first()[1]
+
+# udf_curry=udf(lambda x: get_result(x, ids_ref, vals_ref), IntegerType())
+
+# df.withColumn("result", udf_curry(df.formula)).select("result").show()
 
 # =======================================================================================================================
 # Scenario 20250311
@@ -3276,3 +3285,381 @@ df.crossJoin(df.agg(collect_list("id").alias("id_ref"), collect_list("value").al
 
 # df.groupBy("sell_date").agg(collect_list(df.product).alias("products"),\
 #     count(lit(1)).alias("null_sell")).orderBy(col("null_sell").desc()).show(truncate=False)
+
+# =======================================================================================================================
+# Scenario 34 Q1
+# =======================================================================================================================
+
+# +-----------+---+      =>>     +-----------+---+
+# |       name|sal|              |       name|sal|
+# +-----------+---+              +-----------+---+
+# |sree_ramesh|100|              |   mar_jany|200|
+# | chiran_tan|200|              |  ram_krish|300|
+# |  ram_krish|300|              |sree_ramesh|100|
+# |  john_stan|400|              |  john_stan|400|
+# |   mar_jany|200|              | chiran_tan|200|
+# +-----------+---+              +-----------+---+
+
+
+# MYSQL ---------------------------------------------------------------------------------------------------------------------------
+
+# cur.execute("DROP TABLE IF EXISTS df;")
+# cur.execute("CREATE TABLE df (name varchar(100), sal varchar(100));")
+# cur.execute("""INSERT INTO df VALUES
+#             ('sree_ramesh','100'),
+#             ('chiran_tan','200'),
+#             ('ram_krish','300'),
+#             ('john_stan','400'),
+#             ('mar_jany','200');""")
+
+# con.commit()
+
+# cur.execute(""" select name, sal from (
+#                     select *, SUBSTRING_INDEX(name, '_', -1) as second_name from df
+#                 ) e order by second_name
+#             """)
+# mysql_print()
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = (
+#     ('sree_ramesh','100'),
+#     ('chiran_tan','200'),
+#     ('ram_krish','300'),
+#     ('john_stan','400'),
+#     ('mar_jany','200'),
+# )
+# schema = "name string, sal string"
+
+# df = spark.createDataFrame(data=data, schema=schema)
+# df.createOrReplaceTempView("df")
+# df.show()
+
+# df.withColumn("second_name", split(col("name"), "_")[1]).orderBy(col("second_name"))\
+#     .drop("second_name").show()
+
+# =======================================================================================================================
+# Scenario 34 Q5
+# =======================================================================================================================
+
+# +-----+-----+---+      =>>     +--------+---+----+
+# |TeamA|TeamB|Won|              |teamname|won|lost|
+# +-----+-----+---+              +--------+---+----+
+# |    A|    D|  D|              |       D|  0|   1|
+# |    B|    A|  A|              |       A|  1|   1|
+# |    A|    D|  A|              +--------+---+----+
+# +-----+-----+---+
+
+
+# MYSQL ---------------------------------------------------------------------------------------------------------------------------
+
+# cur.execute("DROP TABLE IF EXISTS df;")
+# cur.execute("CREATE TABLE df (TeamA varchar(100), TeamB varchar(100), Won varchar(100));")
+# cur.execute("""INSERT INTO df VALUES
+#             ('A','D','D'),
+#             ('B','A','A'),
+#             ('A','D','A');""")
+
+# con.commit()
+
+# cur.execute(""" 
+#             select teamname, sum(wonflag) DIV 1 as won, sum(lostflag) DIV 1 as lost
+#             from (
+#                 SELECT TeamA AS TeamName, 
+#                     CASE WHEN TeamA = Won THEN 1 ELSE 0 END AS WonFlag,
+#                     CASE WHEN TeamA != Won THEN 1 ELSE 0 END AS LostFlag
+#                 FROM df
+#                 UNION ALL
+#                 SELECT TeamB AS TeamName,
+#                     CASE WHEN TeamB = Won THEN 1 ELSE 0 END AS WonFlag,
+#                     CASE WHEN TeamB != Won THEN 1 ELSE 0 END AS LostFlag
+#                 FROM df
+#             ) e
+#             group by teamname  
+#             """)
+# mysql_print()
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = (
+#         ('A', 'D', 'D'),
+#         ('B', 'A', 'A'),
+#         ('A', 'D', 'A'),
+# )
+# schema = "TeamA string, TeamB string, Won string"
+
+# df = spark.createDataFrame(data=data, schema=schema)
+# df.createOrReplaceTempView("df")
+# df.show()
+
+# df.withColumn("teamname", when(col("TeamA") == col("Won"), col("TeamA")).otherwise(col("TeamB")))\
+#     .withColumn("wonflag", when(col("teamname") == col("TeamA"), 1).otherwise(0))\
+#     .withColumn("lostflag", when(col("teamname") == col("TeamB"), 1).otherwise(0))\
+#     .groupBy("teamname")\
+#     .agg(sum("wonflag").alias("won"), sum("lostflag").alias("lost"))\
+#     .show()
+
+# =======================================================================================================================
+# Scenario 34 Q6
+# =======================================================================================================================
+
+# +------+--------+---------+     =>>     +------+--------+---------+
+# |Emp Id|Emp Name|Dept Name|             |Emp_Id|Emp_Name|Dept_Name|
+# +------+--------+---------+             +------+--------+---------+
+# |   101|   Alice|    Sales|             |   101|   Alice|    Sales|
+# |   102|     Bob|    Sales|             |   102|     Bob|    Sales|
+# +------+--------+---------+             +------+--------+---------+
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# df = spark.read.format("csv").options(header=True).load("./req_scenario_files/sc_34_q6.csv")
+# df.show()
+
+# mod_cols = [ col(f'{c}').alias('_'.join(c.split(' '))) for c in df.columns ]
+# print( mod_cols )
+
+# df.select(mod_cols).show()
+
+# =======================================================================================================================
+# Scenario 34 Q7
+# =======================================================================================================================
+
+# +-----+------+     =>>     +-----+------+
+# |range|number|             |range|number|
+# +-----+------+             +-----+------+
+# |   90|     2|             |   90|     2|
+# |   60|     3|             |   80|     3|
+# |   70|     5|             |   70|     8|
+# |   80|     1|             |   60|    11|
+# +-----+------+             +-----+------+
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = (
+#         (90, 2),
+#         (60, 3),
+#         (70, 5),
+#         (80, 1),
+# )
+# schema = "range int, number int"
+
+# df = spark.createDataFrame(data=data, schema=schema)
+# df.createOrReplaceTempView("df")
+# df.show()
+
+# df.withColumn("number", sum("number").over(Window.orderBy(col("range").desc()))).show()
+
+# =======================================================================================================================
+# Scenario 34 Q8
+# =======================================================================================================================
+
+# my_list = ['abc', 'for', 'abc', 'like','geek1','nerdy',\
+#     'xyz', 'love','questions','words', 'life']
+
+# def get_group_list(list1):
+#     new_list = []
+
+#     for i in range(int(len(my_list) / 5) + 1):
+#         new_list.append(list1[5*i : 5*(i+1)])
+        
+#     return new_list
+
+# print(get_group_list(my_list))
+
+# ---------------------------------------------------------------------------------------------------------------------------
+
+# string1 = "sahil sahoo"
+# string2 = ""
+# flag = True
+# for i in string1:
+#     if i == ' ':
+#         string2 += ' '
+#         continue
+#     if flag:
+#         string2 += i.upper()
+#     else:
+#         string2 += i
+#     flag = not flag
+
+# print(string2)
+
+# =======================================================================================================================
+# Scenario 34 Q10
+# =======================================================================================================================
+
+# A1 = [1,2,3]
+# A2 = [2,3,4]
+
+# print(list(set(A1 + A2)))
+
+# =======================================================================================================================
+# Scenario 34 Q13
+# =======================================================================================================================
+
+# +---+-------+-----+
+# | id|subject|marks|     =>>     +---+---+---+---+
+# +---+-------+-----+             | id|Eng|Mat|Sci|
+# |101|    Eng|   95|             +---+---+---+---+
+# |101|    Sci|   80|             |101| 95| 95| 80|
+# |101|    Mat|   95|             |102| 75| 90| 85|
+# |102|    Eng|   75|             +---+---+---+---+
+# |102|    Sci|   85|
+# |102|    Mat|   90|
+# +---+-------+-----+
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = (
+#         (101, "Eng", 95),
+#         (101, "Sci", 80),
+#         (101, "Mat", 95),
+#         (102, "Eng", 75),
+#         (102, "Sci", 85),
+#         (102, "Mat", 90),
+# )
+# schema = "id int, subject string, marks int"
+
+# df = spark.createDataFrame(data=data, schema=schema)
+# df.createOrReplaceTempView("df")
+# df.show()
+
+# df.groupBy("id").pivot("subject").agg(first("marks")).show()
+
+# =======================================================================================================================
+# Scenario 34 Q14
+# =======================================================================================================================
+
+# mylist = [ 10,5,24,'Hi',90,12,'Hello' ]
+# print( [ c for c in mylist if type(c) == int] )
+
+# =======================================================================================================================
+# Scenario 34 Q17
+# =======================================================================================================================
+
+# +-----+------------+---------+-------------+----------+   +-----+-------+------+--------+
+# |empid|    fullname|managerid|dateofjoining|      city|   |empid|project|salary|variable|
+# +-----+------------+---------+-------------+----------+   +-----+-------+------+--------+
+# |  121|   John Snow|      321|   01/31/2014|   Toronto|   |  121|     P1|  8000|     500|
+# |  321|Walter White|      986|   01/30/2015|California|   |  321|     P2| 10000|    1000|
+# |  421|Kuldeep Rana|      876|   27/11/2016| New Delhi|   |  421|     P1| 12000|       0|
+# +-----+------------+---------+-------------+----------+   +-----+-------+------+--------+
+
+#                                             _ _   
+#                                            | | |  
+#                                            | | |  
+#                                            | | |  
+#                                          __| | |__
+#                                          \ \_|_/ /
+#                                           \ \ / / 
+#                                            \ V /  
+#                                             \_/   
+
+#                              +------------+-----------+
+#                              |    fullname|finalsalary|
+#                              +------------+-----------+
+#                              |   John Snow|       8500|
+#                              |Walter White|      11000|
+#                              |Kuldeep Rana|       8000|
+#                              +------------+-----------+
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = (
+#         (121, "John Snow", 321, "01/31/2014", "Toronto"),
+#         (321, "Walter White", 986, "01/30/2015", "California"),
+#         (421, "Kuldeep Rana", 876, "27/11/2016", "New Delhi"),
+# )
+# schema = "empid int, fullname string, managerid int, dateofjoining string, city string"
+
+# df1 = spark.createDataFrame(data=data, schema=schema)
+# df1.show()
+
+# data = (
+#         (121, "P1", 8000, 500),
+#         (321, "P2", 10000, 1000),
+#         (421, "P1", 12000, 0),
+# )
+# schema = "empid int, project string, salary int, variable int"
+
+# df2 = spark.createDataFrame(data=data, schema=schema)
+# df2.show()
+
+# udf2 = df2.withColumn("salary", when(df2.empid == 421, lit(8000)).otherwise(df2.salary))
+
+# df1.join(udf2, df1.empid == udf2.empid)\
+#     .withColumn("finalsalary", col("salary") + col("variable"))\
+#     .select(df1.fullname, col("finalsalary"))\
+#     .show()
+
+# =======================================================================================================================
+# Scenario 34 Q18
+# =======================================================================================================================
+
+# +---+--------------------+      =>>     +---+-------+
+# |id |dep                 |              | id|    dep|
+# +---+--------------------+              +---+-------+
+# |1  |(IT, HR)            |              |  1|     IT|
+# |2  |(MR, Sales, Finance)|              |  1|     HR|
+# +---+--------------------+              |  2|     MR|
+#                                         |  2|  Sales|
+#                                         |  2|Finance|
+#                                         +---+-------+
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = (
+#         (1, "(IT, HR)"),
+#         (2, "(MR, Sales, Finance)"),
+# )
+# schema = "id int, dep string"
+
+# df = spark.createDataFrame(data=data, schema=schema)
+# df.show(truncate=False)
+
+# @udf(ArrayType(StringType()))
+# def get_list(str1):
+#     return [ c.strip() for c in str1[1:-1].split(",")] 
+
+# df.withColumn("dep", get_list(df.dep)).withColumn("dep", explode(col("dep"))).show()
+
+# =======================================================================================================================
+# Scenario 34 Q19
+# =======================================================================================================================
+
+# 1.Read the csv and create a dataframe
+# 2.Add a new column age_Check to df with condition age > 18 then true else false 
+# 3.Create a table from dataframe and retrieve contents from it where gender is male
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# df = spark.read.format("csv").options(header=True).load("./req_scenario_files/sc_34_q19.csv")
+# df.show(truncate=False)
+
+# df.withColumn("age_check", when(df.Age>18, True).otherwise(False)).show()
+
+# df.createOrReplaceTempView("df")
+
+# spark.sql("""
+#             select * from df where Gender = 'M'
+#           """).show()
+
+# =======================================================================================================================
+# Scenario 34 Q20
+# =======================================================================================================================
+
+# 1.Read the csv and create a dataframe
+# 2.Add a new column age_Check to df with condition age > 18 then true else false 
+# 3.Create a table from dataframe and retrieve contents from it where gender is male
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# df = spark.read.format("csv").options(header=True).load("./req_scenario_files/sc_34_q19.csv")
+# df.show(truncate=False)
+
+# df.withColumn("age_check", when(df.Age>18, True).otherwise(False)).show()
+
+# df.createOrReplaceTempView("df")
+
+# spark.sql("""
+#             select * from df where Gender = 'M'
+#           """).show()
