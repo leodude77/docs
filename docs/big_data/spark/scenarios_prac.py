@@ -3663,3 +3663,314 @@ spark = SparkSession.builder.getOrCreate()
 # spark.sql("""
 #             select * from df where Gender = 'M'
 #           """).show()
+
+# =======================================================================================================================
+# Scenario 20250312 109 
+# =======================================================================================================================
+
+# +----------+------------+
+# |event_date|event_status|     =>>     +------------+----------+----------+
+# +----------+------------+             |event_status|start_date|  end_date|
+# |01-06-2020|         Won|             +------------+----------+----------+
+# |02-06-2020|         Won|             |         Won|01-06-2020|03-06-2020|
+# |03-06-2020|         Won|             |        Lost|04-06-2020|06-06-2020|
+# |04-06-2020|        Lost|             |         Won|07-06-2020|07-06-2020|
+# |05-06-2020|        Lost|             |        Lost|08-06-2020|08-06-2020|
+# |06-06-2020|        Lost|             +------------+----------+----------+
+# |07-06-2020|         Won|
+# |08-06-2020|        Lost|
+# +----------+------------+
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = [
+#     ("01-06-2020", "Won"),
+#     ("02-06-2020", "Won"),
+#     ("03-06-2020", "Won"),
+#     ("04-06-2020", "Lost"),
+#     ("05-06-2020", "Lost"),
+#     ("06-06-2020", "Lost"),
+#     ("07-06-2020", "Won"),
+#     ("08-06-2020", "Lost")
+# ]
+
+# schema = "event_date string, event_status string"
+
+# df = spark.createDataFrame(data, schema)
+# df.createOrReplaceTempView("events")
+# df.show()
+
+# df.withColumn("change_flag", \
+#   when(col("event_status") != lag("event_status").over(Window.orderBy("event_date")), lit(1)).otherwise(lit(0)))\
+#   .withColumn("event_group", sum(col("change_flag")).over(Window.orderBy("event_date")) )  \
+#   .groupBy(col("event_group"), col("event_status")).agg(first("event_date").alias("start_date"), last("event_date").alias("end_date") )\
+#     .drop(col("event_group")).show()
+
+# One way to look at it is the diff is the number of of other event_status records inbetween
+# window_base=Window.orderBy('event_date')
+# df_t=df.withColumn("diff",
+#                   dense_rank().over(window_base)-
+#                   dense_rank().over(window_base.partitionBy("event_status")))\
+#        .groupBy("event_status","diff").agg(min("event_date").alias("start_date")\
+#                                    ,(max("event_date").alias("end_date")))\
+#         .orderBy("start_date")\
+#        .show()
+
+# spark.sql("""
+          
+#           with CTE as (
+#             select ( row_number() over (order by event_date) - row_number() over (partition by event_status order by event_date) ) as grouping,
+#             event_date, event_status from events
+#           )
+          
+#           select event_status, min(event_date) as start_date, max(event_date) as end_date
+#           from CTE
+#           group by grouping, event_status
+#           """).show()
+
+# =======================================================================================================================
+# Scenario 20250312 111
+# =======================================================================================================================
+
+# +---+-------+      =>>     +---+-------+
+# | id|student|              | id|student|
+# +---+-------+              +---+-------+
+# |  1|  Alice|              |  1|    Bob|
+# |  2|    Bob|              |  2|  Alice|
+# |  3|Charlie|              |  3|  David|
+# |  4|  David|              |  4|Charlie|
+# |  5|    Eve|              |  5|    Eve|
+# +---+-------+              +---+-------+
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = [
+#     (1, "Alice"),
+#     (2, "Bob"),
+#     (3, "Charlie"),
+#     (4, "David"),
+#     (5, "Eve")
+# ]
+
+# columns = ["id", "student"]
+
+# df = spark.createDataFrame(data, columns)
+# df.show()
+# df.createOrReplaceTempView("df")
+
+# df.withColumn("grouping", ((ceil(col("id")/lit(2)))) )\
+#   .withColumn("leader", lead(col("student")).over(Window.partitionBy(col("grouping")).orderBy("id")))\
+#   .withColumn("lagger", lag(col("student")).over(Window.partitionBy(col("grouping")).orderBy("id")))\
+#   .withColumn("student", \
+#     when((col("lagger").isNull() & col("leader").isNull()), col("student"))\
+#     .when(col("leader").isNull(), col("lagger"))\
+#     .otherwise(col("leader")))\
+#   .select("id", "student")\
+#   .show()
+
+# slightly optimized one I guess
+# df\
+#   .withColumn("student", \
+#     when((col("id")) % 2 == 0, lag(col("student")).over(Window.orderBy("id")))\
+#     .when((col("id")) % 2 == 1, coalesce( lead(col("student")).over(Window.orderBy("id")), col("student") )))\
+#   .show()
+
+# spark.sql("""
+#           select id,
+#             case 
+#               when (id % 2) = 1 then coalesce( lead(student) over (order by id), student)
+#               when (id % 2) = 0 then lag(student) over (order by id)
+#             end as student
+#           from df
+#           """).show()
+
+# =======================================================================================================================
+# Scenario 20250312 115
+# =======================================================================================================================
+
+# +-------+-----+--------+
+# |from_id|to_id|duration|     =>>     +-------+-----+----------+--------------+
+# +-------+-----+--------+             |from_id|to_id|call_count|total_duration|
+# |     10|   20|      58|             +-------+-----+----------+--------------+
+# |     20|   10|      12|             |     10|   30|         1|            20|
+# |     10|   30|      20|             |     10|   20|         2|            70|
+# |     30|   40|     100|             |     30|   40|         4|          1000|
+# |     30|   40|     200|             +-------+-----+----------+--------------+
+# |     30|   40|     200|
+# |     40|   30|     500|
+# +-------+-----+--------+
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = [
+#     (10, 20, 58),
+#     (20, 10, 12),
+#     (10, 30, 20),
+#     (30, 40, 100),
+#     (30, 40, 200),
+#     (30, 40, 200),
+#     (40, 30, 500)
+# ]
+
+# columns = ["from_id", "to_id", "duration"]
+
+# df = spark.createDataFrame(data, columns)
+# df.createOrReplaceTempView("df")
+# df.show()
+
+# df.withColumn("maxId", when(df.from_id > df.to_id, df.from_id).otherwise(df.to_id))\
+#   .withColumn("from_id", when(col("from_id") == col("maxId"), col("to_id")).otherwise(col("from_id")))\
+#   .withColumn("to_id", when(col("from_id") == col("to_id"), col("maxId")).otherwise(col("to_id")))\
+#   .groupBy(col("from_id"),col("to_id")).agg(count(lit(1)).alias("call_count"), sum(col("duration")).alias("total_duration"))\
+#   .show()
+
+# spark.sql("""
+#             with CTE1 as (
+#               select from_id + to_id as c, from_id, to_id, duration
+#               from df
+#             ),
+#             CTE2 as (
+#               select case
+#                         when from_id > to_id then c - from_id
+#                         else from_id end
+#                       as from_id,
+#                       case
+#                         when from_id > to_id then c - to_id
+#                         else to_id end
+#                       as to_id,
+#                       duration
+#               from CTE1
+#             )
+            
+#             select from_id, to_id, sum(duration) as total_duration, count(1) as call_count
+#             from CTE2
+#             group by from_id, to_id
+#             order by from_id, to_id
+#           """).show()
+
+# Much simpler approach
+# spark.sql("""
+#           select 
+#             LEAST(from_id, to_id) as person1,
+#             GREATEST(from_id, to_id) as person2,
+#             count(1) as total_count,
+#             sum(duration) as total_duration
+#           from df
+#           group by person1, person2
+#           """).show()
+
+# =======================================================================================================================
+# Scenario 20250312 117
+# =======================================================================================================================
+
+# +---------+-----------+        +-----------+---------+-------+-------+-------+
+# |player_id|player_name|        |player_year|Wimbledon|Fr_open|US_open|Au_open|
+# +---------+-----------+        +-----------+---------+-------+-------+-------+
+# |        1|      Nadal|        |       2017|        2|      1|      1|      2|
+# |        2|    Federer|        |       2018|        3|      1|      3|      2|
+# |        3|      Novak|        |       2019|        3|      1|      1|      3|
+# +---------+-----------+        +-----------+---------+-------+-------+-------+
+#                                 _ _   
+#                                | | |  
+#                                | | |  
+#                                | | |  
+#                              __| | |__
+#                              \ \_|_/ /
+#                               \ \ / / 
+#                                \ V /  
+#                                 \_/   
+								
+#                 +---------+-----------+-----------------+
+#                 |player_id|player_name|grand_slams_count|
+#                 +---------+-----------+-----------------+
+#                 |        1|      Nadal|                5|
+#                 |        2|    Federer|                3|
+#                 |        3|      Novak|                4|
+#                 +---------+-----------+-----------------+
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# data = [
+#     (1, "Nadal"),
+#     (2, "Federer"),
+#     (3, "Novak")
+# ]
+# columns = ["player_id", "player_name"]
+
+# df1 = spark.createDataFrame(data, columns)
+# df1.show()
+# df1.createOrReplaceTempView("df1")
+
+# data = [
+#     (2017, 2, 1, 1, 2),
+#     (2018, 3, 1, 3, 2),
+#     (2019, 3, 1, 1, 3)
+# ]
+# columns = ["player_year", "Wimbledon", "Fr_open", "US_open", "Au_open"]
+
+# df2 = spark.createDataFrame(data, columns)
+# df2.show()
+# df2.createOrReplaceTempView("df2")
+
+# df1.join(df2, df1.player_id == df2.Wimbledon).union(
+#   df1.join(df2, df1.player_id == df2.Fr_open)
+# ).union(
+#   df1.join(df2, df1.player_id == df2.US_open)
+# ).union(
+#   df1.join(df2, df1.player_id == df2.Au_open)
+# ).groupBy("player_id","player_name").agg(count(lit(1)).alias("grand_slams_count"))\
+# .orderBy("player_id").show()
+
+# Alternative
+# df2.unpivot("player_year", ["Wimbledon", "Fr_open", "US_open", "Au_open"], "var", "val")\
+#   .groupBy(col("val")).agg(count(lit(1)).alias("grand_slams_count"))\
+#   .join(df1, col("val") == df1.player_id).select("player_id", "player_name", "grand_slams_count")\
+#   .orderBy("player_id").show()
+
+# spark.sql("""
+#             with 
+#               wimbledonCTE as (
+#                 select Wimbledon as title from df2
+#               ),
+#               fr_open_CTE as (
+#                 select Fr_open as title from df2
+#               ),
+#               us_open_CTE as (
+#                 select US_open as title from df2
+#               ),
+#               au_open_CTE as (
+#                 select Au_open as title from df2
+#               ),
+#               clubbed_CTE as (
+#                 select * from wimbledonCTE UNION ALL
+#                 select * from fr_open_CTE UNION ALL
+#                 select * from us_open_CTE UNION ALL
+#                 select * from au_open_CTE
+#               )
+             
+#             select title as player_id, player_name, grand_slams_count from df1 a
+#             inner join(
+#               select title, count(1) as grand_slams_count
+#               from clubbed_CTE
+#               group by title
+#             ) b on a.player_id = b.title
+#             order by player_id
+            
+#           """).show()
+
+# spark.sql("""
+#           with unpivot_cte as (
+#             select *
+#             from df2
+#             unpivot( player_who_won FOR title IN (Wimbledon, Fr_open, US_open, Au_open))
+#           ),
+#           grouped_cte as (
+#             select player_who_won as player_id, count(1) as grand_slams_count
+#             from unpivot_cte
+#             group by player_who_won
+#           )
+          
+#           select a.player_id, b.player_name, a.grand_slams_count from grouped_cte a
+#           inner join df1 b on a.player_id = b.player_id
+#           order by a.player_id
+#           """).show()
