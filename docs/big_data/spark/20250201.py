@@ -479,190 +479,418 @@ prod = spark.createDataFrame(data3, ["id", "product"])
 # --------------------------------------------------------------------------------------------------------------------------
 # REVISION SPARK until now
 
-filerdd = sc.textFile("file1.txt")
+# filerdd = sc.textFile("file1.txt")
 
-gymrdd = filerdd.filter(lambda x : 'Gymnastics' in x)
+# gymrdd = filerdd.filter(lambda x : 'Gymnastics' in x)
 
-print("====== FILTER GYMNASTICS=====")
-print()
-
-
-
-
-mapsplit = gymrdd.map( lambda x  :  x.split(",") )
-
-from collections import namedtuple
-
-columns = namedtuple('columns', ['txnno','txndate','custno','amount','category','product','city','state','spendby'])
-
-schemardd = mapsplit.map(lambda x : columns(x[0],x[1],x[2],x[3],x[4],x[5],x[6],x[7],x[8]))
-
-prodfilted = schemardd.filter(lambda x : 'Gymnastics' in x.product)
-
-prodfilted.foreach(print)
-
-
-schemadf = prodfilted.toDF()
-
-print()
-print("=====SCHEMA DF======")
-print()
-schemadf.show(5)
+# print("====== FILTER GYMNASTICS=====")
+# print()
 
 
 
-csvdf = spark.read.format("csv").option("header","true").load("file3.txt")
-print()
-print("=====csvdf DF======")
-print()
-csvdf.show(5)
+
+# mapsplit = gymrdd.map( lambda x  :  x.split(",") )
+
+# from collections import namedtuple
+
+# columns = namedtuple('columns', ['txnno','txndate','custno','amount','category','product','city','state','spendby'])
+
+# schemardd = mapsplit.map(lambda x : columns(x[0],x[1],x[2],x[3],x[4],x[5],x[6],x[7],x[8]))
+
+# prodfilted = schemardd.filter(lambda x : 'Gymnastics' in x.product)
+
+# prodfilted.foreach(print)
+
+
+# schemadf = prodfilted.toDF()
+
+# print()
+# print("=====SCHEMA DF======")
+# print()
+# schemadf.show(5)
 
 
 
-jsondf = spark.read.format("json").load("file4.json").select('txnno','txndate','custno','amount','category','product','city','state','spendby')
-print()
-print("=====jsondf DF======")
-print()
-jsondf.show(5)
+# csvdf = spark.read.format("csv").option("header","true").load("file3.txt")
+# print()
+# print("=====csvdf DF======")
+# print()
+# csvdf.show(5)
 
 
 
-parquetdf = spark.read.load("file5.parquet")
-print()
-print("=====parquetdf DF======")
-print()
-parquetdf.show(5)
-
-
-uniondf = schemadf.union(csvdf).union(jsondf).union(parquetdf)
-print()
-print("=====uniondf DF======")
-print()
-uniondf.show(5)
+# jsondf = spark.read.format("json").load("file4.json").select('txnno','txndate','custno','amount','category','product','city','state','spendby')
+# print()
+# print("=====jsondf DF======")
+# print()
+# jsondf.show(5)
 
 
 
-procdf =(
-        uniondf.withColumn("txndate" , expr("split(txndate,'-')[2]"))
-                .withColumnRenamed("txndate", "year")
-                .withColumn("status",expr("case when spendby='cash' then 0 else 1 end"))
-                .filter("txnno>50000")
+# parquetdf = spark.read.load("file5.parquet")
+# print()
+# print("=====parquetdf DF======")
+# print()
+# parquetdf.show(5)
+
+
+# uniondf = schemadf.union(csvdf).union(jsondf).union(parquetdf)
+# print()
+# print("=====uniondf DF======")
+# print()
+# uniondf.show(5)
+
+
+
+# procdf =(
+#         uniondf.withColumn("txndate" , expr("split(txndate,'-')[2]"))
+#                 .withColumnRenamed("txndate", "year")
+#                 .withColumn("status",expr("case when spendby='cash' then 0 else 1 end"))
+#                 .filter("txnno>50000")
+
+# )
+
+# print()
+# print("=====procdf DF======")
+# print()
+# procdf.show(5)
+
+
+
+# aggdf = procdf.groupBy("category").agg(sum("amount").alias("total"))
+
+# print()
+# print("=====aggdf DF======")
+# print()
+# aggdf.show()
+
+
+# data4 = [
+#         (1, "raj"),
+#         (2, "ravi"),
+#         (3, "sai"),
+#         (5, "rani")
+# ]
+
+# cust = spark.createDataFrame(data4, ["id", "name"]).coalesce(1)
+# cust.show()
+
+# data3 = [
+#         (1, "mouse"),
+#         (3, "mobile"),
+#         (7, "laptop")
+# ]
+
+
+
+# prod = spark.createDataFrame(data3, ["id", "product"]).coalesce(1)
+# prod.show()
+
+
+
+# inner = cust.join(prod, ["id"], "inner")
+# print()
+# print("======INNER=====")
+# print()
+# inner.show()
+
+
+# left = cust.join(prod, ["id"], "left")
+# print()
+# print("======left=====")
+# print()
+# left.show()
+
+
+
+
+# right = cust.join(prod, ["id"], "right")
+# print()
+# print("======right=====")
+# print()
+# right.show()
+
+
+# full = cust.join(prod, ["id"], "full")
+# print()
+# print("======full=====")
+# print()
+# full.show()
+
+
+
+
+# anti = cust.join(prod, ["id"], "left_anti")
+# print()
+# print("======anti=====")
+# print()
+# anti.show()
+
+
+
+# cross = cust.crossJoin(prod)
+# print()
+# print("======cross=====")
+# print()
+# cross.show()
+
+
+
+# from pyspark.sql.functions import *
+# data = [
+#         ("DEPT1", 1000),
+#         ("DEPT1", 700),
+#         ("DEPT1", 500),
+#         ("DEPT2", 400),
+#         ("DEPT2", 200),
+#         ("DEPT3", 500),
+#         ("DEPT3", 200)]
+
+# columns = ["dept", "salary"]
+
+# df = spark.createDataFrame(data, columns)
+
+# df.show()
+
+
+# ##🔴🔴🔴🔴🔴🔴 STEP 1 --- CREATE THE WINDOW
+
+# from pyspark.sql.window import Window
+# deptwindow = Window.partitionBy("dept").orderBy( col("salary").desc() )
+
+# ##🔴🔴🔴🔴🔴🔴 STEP 2 --- APPLYING WITH WINDOW  ON DATAFRAME TO DENSE RANK
+
+# drank = df.withColumn("drank" , dense_rank().over(deptwindow)       )
+# drank.show()
+
+# ##🔴🔴🔴🔴🔴🔴 STEP 3  -- FILTER RANK =2
+# filrank = drank.filter(" drank = 2 ")
+# filrank.show()
+
+#--------------------------------------------------------------------------------------------------------------
+# 20250315
+
+# df = spark.read.format("csv").option("header","true").load("usdata.csv")
+# df.show()
+
+# fildf = df.filter("state='LA'")
+# fildf.show()
+
+
+# fildf.write.format("json").mode("overwrite").save("jsondata")
+#  ## error   append   overwrite   ignore
+
+# print("=====DATA WRITTEN=== GO AND CHECK=====")
+
+# -------------------------------------------------------------------------------------------------------------
+# jsondata = """
+
+# {
+#     "id": 1,
+#     "trainer": "sai",
+#     "zeyoAddress": {
+#         "permanentAddress": "Hyderabad",
+#         "temporaryAddress": "chennai"
+#     }
+
+# }
+# """
+
+# rdd = sc.parallelize([jsondata])
+
+# df = spark.read.option("multiline","true").json(rdd)
+# df.show()
+
+# df.printSchema()
+
+# flatdata = df.select(
+#                         "id",
+#                         "trainer",
+#                         "zeyoAddress.permanentAddress",
+#                         "zeyoAddress.temporaryAddress"
+# )
+
+# flatdata.show()
+# flatdata.printSchema()
+
+#--------------------------------------------------------------------------------------------------------------
+# 20250316
+
+data="""
+{
+    "id": 1,
+    "trainer": "sai",
+    "zeyoAddress": {
+        "user": {
+            "permanentAddress": "hyderabad",
+            "temporaryAddress": "chennai"
+        }
+    }
+}
+"""
+
+rdd = sc.parallelize([data])
+df = spark.read.option("multiline","true").json(rdd)
+
+df.show()
+df.printSchema()
+
+flatdata = df.select(
+                    "id",
+                    "trainer",
+                    "zeyoAddress.user.permanentAddress",
+                    "zeyoAddress.user.temporaryAddress",
 
 )
 
-print()
-print("=====procdf DF======")
-print()
-procdf.show(5)
+flatdata.show()
+flatdata.printSchema()
+# --------------------------------------------------------------------------------------------------------------
 
+data="""
+{
+	"id": "000",
+	"type": "donut",
+	"name": "Non cream",
+	"image": {
+		"url": "images/0001.jpg",
+		"width": 200,
+		"height": 200
+	},
+	"thumbnail": {
+		"url": "images/thumbnails/0001.jpg",
+		"width": 33,
+		"height": 33
+	}
+}
+"""
 
-
-aggdf = procdf.groupBy("category").agg(sum("amount").alias("total"))
-
-print()
-print("=====aggdf DF======")
-print()
-aggdf.show()
-
-
-data4 = [
-        (1, "raj"),
-        (2, "ravi"),
-        (3, "sai"),
-        (5, "rani")
-]
-
-cust = spark.createDataFrame(data4, ["id", "name"]).coalesce(1)
-cust.show()
-
-data3 = [
-        (1, "mouse"),
-        (3, "mobile"),
-        (7, "laptop")
-]
-
-
-
-prod = spark.createDataFrame(data3, ["id", "product"]).coalesce(1)
-prod.show()
-
-
-
-inner = cust.join(prod, ["id"], "inner")
-print()
-print("======INNER=====")
-print()
-inner.show()
-
-
-left = cust.join(prod, ["id"], "left")
-print()
-print("======left=====")
-print()
-left.show()
-
-
-
-
-right = cust.join(prod, ["id"], "right")
-print()
-print("======right=====")
-print()
-right.show()
-
-
-full = cust.join(prod, ["id"], "full")
-print()
-print("======full=====")
-print()
-full.show()
-
-
-
-
-anti = cust.join(prod, ["id"], "left_anti")
-print()
-print("======anti=====")
-print()
-anti.show()
-
-
-
-cross = cust.crossJoin(prod)
-print()
-print("======cross=====")
-print()
-cross.show()
-
-
-
-from pyspark.sql.functions import *
-data = [
-        ("DEPT1", 1000),
-        ("DEPT1", 700),
-        ("DEPT1", 500),
-        ("DEPT2", 400),
-        ("DEPT2", 200),
-        ("DEPT3", 500),
-        ("DEPT3", 200)]
-
-columns = ["dept", "salary"]
-
-df = spark.createDataFrame(data, columns)
+rdd = sc.parallelize([data])
+df = spark.read.option("multiline","true").json(rdd)
 
 df.show()
+df.printSchema()
 
+flatdata = df.selectExpr(
+                        "id",
+                        "image.height  as  i_height",
+                        "image.url   as  i_url",
+                        "image.width  as  i_width",
+                        "name",
+                        "thumbnail.height as  t_height",
+                        "thumbnail.url as  t_url",
+                        "thumbnail.width as  t_width",
+                        "type"
+)
 
-##🔴🔴🔴🔴🔴🔴 STEP 1 --- CREATE THE WINDOW
+flatdata.show()
+flatdata.printSchema()
 
-from pyspark.sql.window import Window
-deptwindow = Window.partitionBy("dept").orderBy( col("salary").desc() )
+# --------------------------------------------------------------------------------------------------------------
 
-##🔴🔴🔴🔴🔴🔴 STEP 2 --- APPLYING WITH WINDOW  ON DATAFRAME TO DENSE RANK
+data="""
+{
+    "id": 1,
+    "trainer": "sai",
+    "zeyoAddress": {
+            "permanentAddress": "hyderabad",
+            "temporaryAddress": "chennai"
+    }
+}
+"""
 
-drank = df.withColumn("drank" , dense_rank().over(deptwindow)       )
-drank.show()
+rdd = sc.parallelize([data])
+df = spark.read.option("multiline","true").json(rdd)
 
-##🔴🔴🔴🔴🔴🔴 STEP 3  -- FILTER RANK =2
-filrank = drank.filter(" drank = 2 ")
-filrank.show()
+df.show()
+df.printSchema()
+
+flatdata = df.select(
+    
+                        "id",
+                        "trainer",
+                        "zeyoAddress.permanentAddress",
+                        "zeyoAddress.temporaryAddress"
+  )
+flatdata.show()
+flatdata.printSchema()
+
+withflat = (
+    df.withColumn( "permanentAddress" , expr("zeyoAddress.permanentAddress"))
+        .withColumn("temporaryAddress", expr("zeyoAddress.temporaryAddress"))
+        .drop("zeyoAddress")
+)
+
+withflat.show()
+withflat.printSchema()
+
+# --------------------------------------------------------------------------------------------------------------
+
+data="""
+{
+    "id": 1,
+    "trainer": "sai",
+    "zeyoAddress": {
+        "user": {
+            "permanentAddress": "hyderabad",
+            "temporaryAddress": "chennai"
+        }
+    }
+}
+"""
+
+rdd = sc.parallelize([data])
+
+df = spark.read.option("multiline","true").json(rdd)
+
+df.show()
+df.printSchema()
+
+withflat = (
+        df.withColumn("permanentAddress", expr("zeyoAddress.user.permanentAddress"))
+        .withColumn("temporaryAddress", expr("zeyoAddress.user.temporaryAddress"))
+        .drop("zeyoAddress")
+)
+
+withflat.show()
+withflat.printSchema()
+
+# --------------------------------------------------------------------------------------------------------------
+
+data="""
+{
+	"id": "000",
+	"type": "donut",
+	"name": "Non cream",
+	"image": {
+		"url": "images/0001.jpg",
+		"width": 200,
+		"height": 200
+	},
+	"thumbnail": {
+		"url": "images/thumbnails/0001.jpg",
+		"width": 33,
+		"height": 33
+	}
+}
+"""
+
+rdd = sc.parallelize([data])
+
+df = spark.read.option("multiline","true").json(rdd)
+df.show()
+df.printSchema()
+
+withflat = (
+
+             df.withColumn( "i_height" , expr("image.height") )
+             .withColumn( "i_url" , expr("image.url") )
+             .withColumn( "i_width" , expr("image.width") )
+             .withColumn( "t_height" , expr("thumbnail.height") )
+             .withColumn( "t_url" , expr("thumbnail.url") )
+             .withColumn( "t_width" , expr("thumbnail.width") )
+             .drop("image","thumbnail")
+)
+
+withflat.show()
+withflat.printSchema()

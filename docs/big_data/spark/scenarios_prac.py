@@ -17,13 +17,13 @@ import sys
         
 # Using Mysql
 import mysql.connector
-con = mysql.connector.connect(
-  host="localhost",
-  user="root",
-  password="pass",
-  database="scenarios"
-)
-cur = con.cursor()
+# con = mysql.connector.connect(
+#   host="localhost",
+#   user="root",
+#   password="pass",
+#   database="scenarios"
+# )
+# cur = con.cursor()
 def mysql_print():
   print()
   print (cur.column_names)
@@ -520,6 +520,46 @@ spark = SparkSession.builder.getOrCreate()
 
 # df.show()
 # df.withColumn("col", expr("explode(split(concat_ws('-',*), '-'))")).select("col").show()
+
+# df1 = spark.sql("""
+#           with CTE1 as (
+#             select cust_col as col from df
+#             unpivot (
+#               cust_col FOR var in (col1, col2, col3, col4)
+#             )
+#           )
+#           , CTE2 as (
+#             select case when LENGTH(col) < LENGTH(LAG(col) over (order by (SELECT NULL))) then 1 else 0 end as grouping, col
+#             from CTE1
+#           )
+#           , CTE3 as (
+#             select sum(grouping) over (order by (select NULL) rows between unbounded preceding and current row) as grouping_id, col
+#             from CTE2
+#           )
+#           , CTE4 as (
+#             select *, concat('col_', ROW_NUMBER() OVER (partition by grouping_id order by (select null))) as column_name
+#             from CTE3
+#           )
+          
+#           select *
+#           from CTE4
+             
+#           """)
+
+# df1.groupBy("grouping_id").pivot("column_name").agg(collect_list("col")).drop("grouping_id").show()
+
+# data = [("m1",), ("m1,m2",), ("m1,m2,m3",), ("m1,m2,m3,m4",), ("",)]
+
+# df = spark.createDataFrame(data, ["col"])
+
+# df = df.filter(df.col != "")
+# df = df.withColumn("id", monotonically_increasing_id())
+
+# df_pivot = df.groupBy().pivot("id").agg({"col": "last"})
+# df_pivot.show()
+
+# df_pivot = df_pivot.toDF("col1", "col2", "col3", "col4")
+# df_pivot.show()
 
 # =======================================================================================================================
 # Scenario 30
@@ -3973,4 +4013,127 @@ spark = SparkSession.builder.getOrCreate()
 #           select a.player_id, b.player_name, a.grand_slams_count from grouped_cte a
 #           inner join df1 b on a.player_id = b.player_id
 #           order by a.player_id
+#           """).show()
+
+# =======================================================================================================================
+# Scenario 20250313 118
+# =======================================================================================================================
+
+# +---+-----+------+---------+
+# | ID| Name|Salary|ManagerID|     =>>     +-----+
+# +---+-----+------+---------+             | Name|
+# |  1| John|  6000|        4|             +-----+
+# |  2|Kevin| 11000|        4|             |Kevin|
+# |  3|  Bob|  8000|        5|             +-----+
+# |  4|Laura|  9000|     NULL|
+# |  5|Sarah| 10000|     NULL|
+# +---+-----+------+---------+
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+# schema = StructType([
+#     StructField("ID", IntegerType(), True),
+#     StructField("Name", StringType(), True),
+#     StructField("Salary", IntegerType(), True),
+#     StructField("ManagerID", IntegerType(), True)
+# ])
+
+# data = [
+#     (1, "John", 6000, 4),
+#     (2, "Kevin", 11000, 4),
+#     (3, "Bob", 8000, 5),
+#     (4, "Laura", 9000, None),
+#     (5, "Sarah", 10000, None)
+# ]
+
+# df = spark.createDataFrame(data, schema)
+# df.createOrReplaceTempView("df")
+# df.show()
+
+# manager_df = df.select("ManagerID").distinct()
+# manager_df.show()
+
+# df.alias("a").join(df.alias("b"), (col("a.Salary")>col("b.Salary")) & (col("a.id") != col("b.id")) & (col("a.ManagerId").isNotNull()))\
+#   .join(manager_df, (col("b.ID") ==  manager_df.ManagerID)).select("a.Name").distinct().show()
+
+# spark.sql("""
+#           with CTE1 as (
+#             select *, a.Salary as emp_sal, b.Salary as man_sal, a.Name as cust_name from df a 
+#             inner join df b on
+#             a.ManagerID = b.ID
+#           )
+          
+#           select cust_name as Name
+#           from CTE1
+#           where emp_sal > man_sal
+          
+#           """).show()
+
+
+# =======================================================================================================================
+# Scenario 20250313 120
+# =======================================================================================================================
+
+# +-----------+-------------+-----------+------+
+# |employee_id|employee_name| department|salary|     =>>     +-------------+-----------+------+------------------+
+# +-----------+-------------+-----------+------+             |employee_name| department|salary|           avg_sal|
+# |          1|        Alice|         HR| 60000|             +-------------+-----------+------+------------------+
+# |          2|          Bob|         HR| 50000|             |         Hank|Engineering| 98000| 93666.66666666667|
+# |          3|      Charlie|    Finance| 70000|             |        Alice|         HR| 60000|51666.666666666664|
+# |          4|        David|    Finance| 75000|             |        David|    Finance| 75000| 70333.33333333333|
+# |          5|          Eve|Engineering| 90000|             +-------------+-----------+------+------------------+
+# |          6|        Frank|Engineering| 93000|
+# |          7|        Grace|         HR| 45000|
+# |          8|         Hank|Engineering| 98000|
+# |          9|          Ivy|    Finance| 66000|
+# +-----------+-------------+-----------+------+
+
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+schema = StructType([
+    StructField("employee_id", IntegerType(), True),
+    StructField("employee_name", StringType(), True),
+    StructField("department", StringType(), True),
+    StructField("salary", IntegerType(), True)
+])
+
+data = [
+    (1, "Alice", "HR", 60000),
+    (2, "Bob", "HR", 50000),
+    (3, "Charlie", "Finance", 70000),
+    (4, "David", "Finance", 75000),
+    (5, "Eve", "Engineering", 90000),
+    (6, "Frank", "Engineering", 93000),
+    (7, "Grace", "HR", 45000),
+    (8, "Hank", "Engineering", 98000),
+    (9, "Ivy", "Finance", 66000)
+]
+
+df = spark.createDataFrame(data, schema)
+df.createOrReplaceTempView("df")
+df.show()
+
+avg_sal_df = df.groupBy("department").agg(avg("salary").alias("avg_sal"))
+avg_sal_df.show()
+
+joindf = df.alias("a").join(avg_sal_df.alias("b"), (col("a.salary") > col("b.avg_sal")) & ( col("a.department") == col("b.department")) )
+joindf.show()
+
+# df.alias("a").join(avg_sal_df.alias("b"), (col("a.salary") > col("b.avg_sal")) & ( col("a.department") == col("b.department")) )\
+#   .select(col("a.employee_name"), col("a.department"), col("a.salary"), col("b.avg_sal")).show()
+
+import time
+time.sleep(3000)
+
+# spark.sql("""
+#           with CTE as (
+#             select *, avg(salary) over (partition by department) as avg_salary
+#             from df
+#           )
+          
+#           select employee_name, department, salary, avg_salary
+#           from CTE
+#           where salary > avg_salary
+               
 #           """).show()
