@@ -162,4 +162,9 @@ sqoop import --connect jdbc:mysql://localhost/practice_commands --username root 
 # Create sqoop job
 sqoop job --create inc_import -- import --connect jdbc:mysql://localhost/practice_commands --username root --password cloudera --m 1\
  --target-dir /user/cloudera/incremental_data --table customers_transactions\
- --check-column transaction_id --incremental append
+ --check-column transaction_id --incremental append --last-value 50
+
+# Using password-file, else have provide password when using show and exec
+sqoop job --create inc_import_v2 -- import --connect jdbc:mysql://localhost/practice_commands --username root --password-file file:///home/cloudera/passfile --m 1\
+ --target-dir /user/cloudera/products_less_than_200 --table customers_transactions\
+ --check-column transaction_id --incremental append --last-value 50
