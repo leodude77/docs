@@ -716,181 +716,310 @@ prod = spark.createDataFrame(data3, ["id", "product"])
 #--------------------------------------------------------------------------------------------------------------
 # 20250316
 
-data="""
-{
-    "id": 1,
-    "trainer": "sai",
-    "zeyoAddress": {
-        "user": {
-            "permanentAddress": "hyderabad",
-            "temporaryAddress": "chennai"
-        }
-    }
-}
-"""
+# data="""
+# {
+#     "id": 1,
+#     "trainer": "sai",
+#     "zeyoAddress": {
+#         "user": {
+#             "permanentAddress": "hyderabad",
+#             "temporaryAddress": "chennai"
+#         }
+#     }
+# }
+# """
 
-rdd = sc.parallelize([data])
-df = spark.read.option("multiline","true").json(rdd)
+# rdd = sc.parallelize([data])
+# df = spark.read.option("multiline","true").json(rdd)
 
-df.show()
-df.printSchema()
+# df.show()
+# df.printSchema()
 
-flatdata = df.select(
-                    "id",
-                    "trainer",
-                    "zeyoAddress.user.permanentAddress",
-                    "zeyoAddress.user.temporaryAddress",
+# flatdata = df.select(
+#                     "id",
+#                     "trainer",
+#                     "zeyoAddress.user.permanentAddress",
+#                     "zeyoAddress.user.temporaryAddress",
 
-)
+# )
 
-flatdata.show()
-flatdata.printSchema()
-# --------------------------------------------------------------------------------------------------------------
+# flatdata.show()
+# flatdata.printSchema()
+# # --------------------------------------------------------------------------------------------------------------
 
-data="""
-{
-	"id": "000",
-	"type": "donut",
-	"name": "Non cream",
-	"image": {
-		"url": "images/0001.jpg",
-		"width": 200,
-		"height": 200
-	},
-	"thumbnail": {
-		"url": "images/thumbnails/0001.jpg",
-		"width": 33,
-		"height": 33
-	}
-}
-"""
+# data="""
+# {
+# 	"id": "000",
+# 	"type": "donut",
+# 	"name": "Non cream",
+# 	"image": {
+# 		"url": "images/0001.jpg",
+# 		"width": 200,
+# 		"height": 200
+# 	},
+# 	"thumbnail": {
+# 		"url": "images/thumbnails/0001.jpg",
+# 		"width": 33,
+# 		"height": 33
+# 	}
+# }
+# """
 
-rdd = sc.parallelize([data])
-df = spark.read.option("multiline","true").json(rdd)
+# rdd = sc.parallelize([data])
+# df = spark.read.option("multiline","true").json(rdd)
 
-df.show()
-df.printSchema()
+# df.show()
+# df.printSchema()
 
-flatdata = df.selectExpr(
-                        "id",
-                        "image.height  as  i_height",
-                        "image.url   as  i_url",
-                        "image.width  as  i_width",
-                        "name",
-                        "thumbnail.height as  t_height",
-                        "thumbnail.url as  t_url",
-                        "thumbnail.width as  t_width",
-                        "type"
-)
+# flatdata = df.selectExpr(
+#                         "id",
+#                         "image.height  as  i_height",
+#                         "image.url   as  i_url",
+#                         "image.width  as  i_width",
+#                         "name",
+#                         "thumbnail.height as  t_height",
+#                         "thumbnail.url as  t_url",
+#                         "thumbnail.width as  t_width",
+#                         "type"
+# )
 
-flatdata.show()
-flatdata.printSchema()
+# flatdata.show()
+# flatdata.printSchema()
 
-# --------------------------------------------------------------------------------------------------------------
+# # --------------------------------------------------------------------------------------------------------------
 
-data="""
-{
-    "id": 1,
-    "trainer": "sai",
-    "zeyoAddress": {
-            "permanentAddress": "hyderabad",
-            "temporaryAddress": "chennai"
-    }
-}
-"""
+# data="""
+# {
+#     "id": 1,
+#     "trainer": "sai",
+#     "zeyoAddress": {
+#             "permanentAddress": "hyderabad",
+#             "temporaryAddress": "chennai"
+#     }
+# }
+# """
 
-rdd = sc.parallelize([data])
-df = spark.read.option("multiline","true").json(rdd)
+# rdd = sc.parallelize([data])
+# df = spark.read.option("multiline","true").json(rdd)
 
-df.show()
-df.printSchema()
+# df.show()
+# df.printSchema()
 
-flatdata = df.select(
+# flatdata = df.select(
     
-                        "id",
-                        "trainer",
-                        "zeyoAddress.permanentAddress",
-                        "zeyoAddress.temporaryAddress"
-  )
-flatdata.show()
-flatdata.printSchema()
+#                         "id",
+#                         "trainer",
+#                         "zeyoAddress.permanentAddress",
+#                         "zeyoAddress.temporaryAddress"
+#   )
+# flatdata.show()
+# flatdata.printSchema()
 
-withflat = (
-    df.withColumn( "permanentAddress" , expr("zeyoAddress.permanentAddress"))
-        .withColumn("temporaryAddress", expr("zeyoAddress.temporaryAddress"))
-        .drop("zeyoAddress")
+# withflat = (
+#     df.withColumn( "permanentAddress" , expr("zeyoAddress.permanentAddress"))
+#         .withColumn("temporaryAddress", expr("zeyoAddress.temporaryAddress"))
+#         .drop("zeyoAddress")
+# )
+
+# withflat.show()
+# withflat.printSchema()
+
+# # --------------------------------------------------------------------------------------------------------------
+
+# data="""
+# {
+#     "id": 1,
+#     "trainer": "sai",
+#     "zeyoAddress": {
+#         "user": {
+#             "permanentAddress": "hyderabad",
+#             "temporaryAddress": "chennai"
+#         }
+#     }
+# }
+# """
+
+# rdd = sc.parallelize([data])
+
+# df = spark.read.option("multiline","true").json(rdd)
+
+# df.show()
+# df.printSchema()
+
+# withflat = (
+#         df.withColumn("permanentAddress", expr("zeyoAddress.user.permanentAddress"))
+#         .withColumn("temporaryAddress", expr("zeyoAddress.user.temporaryAddress"))
+#         .drop("zeyoAddress")
+# )
+
+# withflat.show()
+# withflat.printSchema()
+
+# # --------------------------------------------------------------------------------------------------------------
+
+# data="""
+# {
+# 	"id": "000",
+# 	"type": "donut",
+# 	"name": "Non cream",
+# 	"image": {
+# 		"url": "images/0001.jpg",
+# 		"width": 200,
+# 		"height": 200
+# 	},
+# 	"thumbnail": {
+# 		"url": "images/thumbnails/0001.jpg",
+# 		"width": 33,
+# 		"height": 33
+# 	}
+# }
+# """
+
+# rdd = sc.parallelize([data])
+
+# df = spark.read.option("multiline","true").json(rdd)
+# df.show()
+# df.printSchema()
+
+# withflat = (
+
+#              df.withColumn( "i_height" , expr("image.height") )
+#              .withColumn( "i_url" , expr("image.url") )
+#              .withColumn( "i_width" , expr("image.width") )
+#              .withColumn( "t_height" , expr("thumbnail.height") )
+#              .withColumn( "t_url" , expr("thumbnail.url") )
+#              .withColumn( "t_width" , expr("thumbnail.width") )
+#              .drop("image","thumbnail")
+# )
+
+# withflat.show()
+# withflat.printSchema()
+
+#--------------------------------------------------------------------------------------------------------------
+# 20250322
+# data="""
+# {
+#     "id": 1,
+#     "trainer": "sai",
+#     "zeyoStudents": [
+#         "Ankita",
+#         "Ajay"
+#     ],
+#     "zeyoMentors": [
+#         "M1",
+#         "M2"
+#     ]
+# }
+# """
+
+# rdd = sc.parallelize([data])
+
+# df = spark.read.option("multiline","true").json(rdd)
+
+# df.show()
+# df.printSchema()
+
+# df.withColumn("zeyoStudents", explode("zeyoStudents")).withColumn("zeyoMentors", explode("zeyoMentors")).show()
+# df.selectExpr("id", "trainer", "explode(zeyoStudents)", "explode(zeyoMentors)").show()
+
+#--------------------------------------------------------------------------------------------------------------
+# STRUCT INSIDE ARRAY
+
+# data="""
+# {
+# 	"org": "zeyobron",
+# 	"trainer": "zeyobron",
+# 	"location": "Pune",
+# 	"users": [{
+# 			"userId": 1,
+# 			"firstName": "Krish",
+# 			"lastName": "Lee",
+# 			"phoneNumber": 123456,
+# 			"emailAddress": "krish.lee@learningcontainer.com"
+# 		},
+# 		{
+# 			"userId": 2,
+# 			"firstName": "racks",
+# 			"lastName": "jacson",
+# 			"phoneNumber": 123456,
+# 			"emailAddress": "racks.jacson@learningcontainer.com"
+# 		}
+# 	]
+# }
+# """
+
+# rdd = sc.parallelize([data])
+
+# df = spark.read.option("multiline","true").json(rdd)
+
+# df.show()
+# df.printSchema()
+
+# cols = df.withColumn("users", explode("users")).select("users.*").columns
+# cols = [ f'users.{c} as {c}' for c in cols]
+# print(cols)
+
+# cols.extend(["org", "trainer", "location"])
+
+# df.withColumn("users", explode("users")).selectExpr(cols).show()
+
+
+#--------------------------------------------------------------------------------------------------------------
+# FULL URL CODE
+
+import urllib.request
+import ssl
+
+urldata = (
+
+        urllib.request
+        .urlopen("https://randomuser.me/api/0.8/?results=10",context=ssl._create_unverified_context())
+        .read()
+        .decode("utf-8")
+
+
 )
 
-withflat.show()
-withflat.printSchema()
+print(urldata)
 
-# --------------------------------------------------------------------------------------------------------------
-
-data="""
-{
-    "id": 1,
-    "trainer": "sai",
-    "zeyoAddress": {
-        "user": {
-            "permanentAddress": "hyderabad",
-            "temporaryAddress": "chennai"
-        }
-    }
-}
-"""
-
-rdd = sc.parallelize([data])
-
-df = spark.read.option("multiline","true").json(rdd)
+rdd = sc.parallelize([urldata])
+df = spark.read.json(rdd)
 
 df.show()
 df.printSchema()
 
-withflat = (
-        df.withColumn("permanentAddress", expr("zeyoAddress.user.permanentAddress"))
-        .withColumn("temporaryAddress", expr("zeyoAddress.user.temporaryAddress"))
-        .drop("zeyoAddress")
+explodedf = df.withColumn("results",expr("explode(results)"))
+explodedf.show()
+
+explodedf.printSchema()
+
+finalexplode =  explodedf.select(
+        "nationality",
+        "results.user.cell",
+        "results.user.dob",
+        "results.user.email",
+        "results.user.gender",
+        "results.user.location.city",
+        "results.user.location.state",
+        "results.user.location.street",
+        "results.user.location.zip",
+        "results.user.md5",
+        "results.user.name.first",
+        "results.user.name.last",
+        "results.user.name.title",
+        "results.user.password",
+        "results.user.phone",
+        "results.user.picture.large",
+        "results.user.picture.medium",
+        "results.user.picture.thumbnail",
+        "results.user.registered",
+        "results.user.salt",
+        "results.user.sha1",
+        "results.user.sha256",
+        "results.user.username",
+        "seed",
+        "version"
 )
 
-withflat.show()
-withflat.printSchema()
-
-# --------------------------------------------------------------------------------------------------------------
-
-data="""
-{
-	"id": "000",
-	"type": "donut",
-	"name": "Non cream",
-	"image": {
-		"url": "images/0001.jpg",
-		"width": 200,
-		"height": 200
-	},
-	"thumbnail": {
-		"url": "images/thumbnails/0001.jpg",
-		"width": 33,
-		"height": 33
-	}
-}
-"""
-
-rdd = sc.parallelize([data])
-
-df = spark.read.option("multiline","true").json(rdd)
-df.show()
-df.printSchema()
-
-withflat = (
-
-             df.withColumn( "i_height" , expr("image.height") )
-             .withColumn( "i_url" , expr("image.url") )
-             .withColumn( "i_width" , expr("image.width") )
-             .withColumn( "t_height" , expr("thumbnail.height") )
-             .withColumn( "t_url" , expr("thumbnail.url") )
-             .withColumn( "t_width" , expr("thumbnail.width") )
-             .drop("image","thumbnail")
-)
-
-withflat.show()
-withflat.printSchema()
+finalexplode.show()
+finalexplode.printSchema()
