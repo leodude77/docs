@@ -165,6 +165,26 @@ sqoop job --create inc_import -- import --connect jdbc:mysql://localhost/practic
  --check-column transaction_id --incremental append --last-value 50
 
 # Using password-file, else have provide password when using show and exec
+# echo -n cloudera >> pfile
 sqoop job --create inc_import_v2 -- import --connect jdbc:mysql://localhost/practice_commands --username root --password-file file:///home/cloudera/passfile --m 1\
  --target-dir /user/cloudera/products_less_than_200 --table customers_transactions\
  --check-column transaction_id --incremental append --last-value 50
+
+# Sqoop export all tables - if warehouse-dir is not provided, it stores it under /user/${user_id} directory
+sqoop import-all-tables --connect jdbc:mysql://localhost/practice_commands --username root --password-file file:///home/cloudera/pfile \
+ --warehouse-dir /user/cloudera/import-all-except-cust-trans --exclude-tables "customers_transactions" --m 1
+
+# --------------------------------------------------------------------------------------------------------------
+delete from customers_transactions where transaction_id IN (45,46,47,48,49,50);
+
+INSERT INTO customers_transactions (transaction_id, customer_id, product_id, transaction_date, quantity, total_amount, payment_method, shipping_address, status, discount) VALUES
+(45, 105, 14, '2025-04-22 14:00:00', 1, 1399.99, 'Updated record', '654 Birch St, Capital City', 'Pending', 5.00),
+(46, 106, 8, '2025-04-22 15:30:00', 2, 799.98, 'Updated record', '987 Cedar St, Shelbyville', 'Completed', 10.00),
+(47, 107, 19, '2025-04-22 16:10:00', 1, 849.99, 'Updated record', '159 Walnut St, Springfield', 'Completed', 5.00),
+(48, 108, 2, '2025-04-22 17:25:00', 1, 349.99, 'Updated record', '753 Oak St, Springfield', 'Shipped', 10.00),
+(49, 109, 15, '2025-04-22 18:40:00', 3, 449.97, 'Updated record', '258 Pine St, Springfield', 'Completed', 0.00),
+(50, 110, 11, '2025-04-22 19:55:00', 2, 2799.98, 'Updated record', '432 Elm St, Capital City', 'Shipped', 10.00);
+
+sqoop import --connect jdbc:mysql://localhost/practice_commands --username root --password-file file:///home/cloudera/pfile --m 1\
+ --target-dir /user/cloudera/cust_50 --table customers_transactions --incremental lastmodified \
+ --check-column transaction_date --last-value '2025-04-20' --merge-key transaction_id

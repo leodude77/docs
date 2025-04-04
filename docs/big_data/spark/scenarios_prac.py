@@ -39,7 +39,7 @@ os.environ['JAVA_HOME'] = r'C:\Program Files\Java\jdk1.8.0_202'
 # os.environ['PYSPARK_SUBMIT_ARGS'] = '--packages com.datastax.spark:spark-cassandra-connector_2.12:3.5.1 pyspark-shell'
 # os.environ['PYSPARK_SUBMIT_ARGS'] = '--packages org.apache.spark:spark-avro_2.12:3.5.4 pyspark-shell'
 # os.environ['PYSPARK_SUBMIT_ARGS'] = '--packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.4 pyspark-shell'
-os.environ['PYSPARK_SUBMIT_ARGS'] = '--packages mysql:mysql-connector-java:8.0.17 pyspark-shell'
+# os.environ['PYSPARK_SUBMIT_ARGS'] = '--packages mysql:mysql-connector-java:8.0.17 pyspark-shell'
 
 
 conf = SparkConf().setAppName("pyspark").setMaster("local[*]").set("spark.driver.host", "localhost").set(
@@ -4376,3 +4376,21 @@ spark = SparkSession.builder.getOrCreate()
 # joined_df = maxSubPerDay_df.join(uniqueTillDate_df, ["submission_date"])
 # joined_df = joined_df.join(hackers_df, ["hacker_id"]).select("submission_date", "consistor", "hacker_id", "name").orderBy("submission_date")
 # joined_df.show()
+
+# ---------------------------------------------------------------------------------------------------------------------------
+# Sample DataFrames
+df_a = spark.createDataFrame([(1, None), (2, 'None')], ['reqid', 'mastermodelid'])
+df_b = spark.createDataFrame([(2,), (3,), (4,)], ['modelid'])
+
+# Creating a window spec for generating sequence numbers
+windowSpec = Window.orderBy('reqid')
+
+# Generating the next sequence of mastermodelid for df_a
+df_a = df_a.withColumn(
+    'mastermodelid',
+     expr("concat('mstc', repeat('0' , 8 - length( cast((row_number() over (order by reqid) + 10) as string) )), row_number() over (order by reqid) + 10 )")
+)
+
+# Show the result
+df_a.show()
+input("Wadup")
