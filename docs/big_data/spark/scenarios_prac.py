@@ -4379,18 +4379,126 @@ spark = SparkSession.builder.getOrCreate()
 
 # ---------------------------------------------------------------------------------------------------------------------------
 # Sample DataFrames
-df_a = spark.createDataFrame([(1, None), (2, 'None')], ['reqid', 'mastermodelid'])
-df_b = spark.createDataFrame([(2,), (3,), (4,)], ['modelid'])
+# df_a = spark.createDataFrame([(1, None), (2, 'None')], ['reqid', 'mastermodelid'])
+# df_b = spark.createDataFrame([(2,), (3,), (4,)], ['modelid'])
 
-# Creating a window spec for generating sequence numbers
-windowSpec = Window.orderBy('reqid')
+# # Creating a window spec for generating sequence numbers
+# windowSpec = Window.orderBy('reqid')
 
-# Generating the next sequence of mastermodelid for df_a
-df_a = df_a.withColumn(
-    'mastermodelid',
-     expr("concat('mstc', repeat('0' , 8 - length( cast((row_number() over (order by reqid) + 10) as string) )), row_number() over (order by reqid) + 10 )")
-)
+# # Generating the next sequence of mastermodelid for df_a
+# df_a = df_a.withColumn(
+#     'mastermodelid',
+#      expr("concat('mstc', repeat('0' , 8 - length( cast((row_number() over (order by reqid) + 10) as string) )), row_number() over (order by reqid) + 10 )")
+# )
 
-# Show the result
-df_a.show()
-input("Wadup")
+# # Show the result
+# df_a.show()
+# input("Wadup")
+
+# =======================================================================================================================
+
+# ('Team_1', 'Team_2', 'Winner')             =>>     ('team', 'matchesPlayed', 'wins', 'losses')
+# ('India', 'SL', 'India')                           ('India', 2, 2, 0)
+# ('SL', 'Aus', 'Aus')                               ('SL', 2, 0, 2)
+# ('SA', 'Eng', 'Eng')                               ('SA', 1, 0, 1)
+# ('Eng', 'NZ', 'NZ')                                ('Eng', 2, 1, 1)
+# ('Aus', 'India', 'India')                          ('Aus', 2, 1, 1)
+# 			                                             ('NZ', 1, 1, 0)
+
+# MYSQL ---------------------------------------------------------------------------------------------------------------------------
+
+# cur.execute("DROP TABLE IF EXISTS MatchResults;")
+# cur.execute("""CREATE TABLE MatchResults (
+#     Team_1 VARCHAR(50),
+#     Team_2 VARCHAR(50),
+#     Winner VARCHAR(50)
+# );""")
+# cur.execute("""INSERT INTO MatchResults (Team_1, Team_2, Winner) VALUES
+# ('India', 'SL', 'India'),
+# ('SL', 'Aus', 'Aus'),
+# ('SA', 'Eng', 'Eng'),
+# ('Eng', 'NZ', 'NZ'),
+# ('Aus', 'India', 'India');""")
+
+# con.commit()
+
+# cur.execute("""
+#             with cte1 as (
+#               select Team_1, count(1) from MatchResults group by Team_1
+#             ),
+#             cte2 as (
+#               select Team_2, count(1) from MatchResults group by Team_2
+#             ),
+#             cte3 as (
+#               select * from cte1 union all select * from cte2
+#             ),
+#             wins as (
+#               select Winner as team, count(1) as wins from MatchResults group by Winner
+#             ),
+#             matches_played as (
+#               select Team_1 as team, count(1) as matchesPlayed from cte3 group by Team_1
+#             )
+            
+#             select * from MatchResults
+            
+#             """)
+# mysql_print()
+
+# =======================================================================================================================
+
+# ('order_id', 'customer_id', 'order_date', 'order_amount')     =>>     (datetime.date(2022, 1, 1), 0, 3)
+# (1, 100, datetime.date(2022, 1, 1), Decimal('2000.00'))               (datetime.date(2022, 1, 2), 1, 2)
+# (2, 200, datetime.date(2022, 1, 1), Decimal('2500.00'))               (datetime.date(2022, 1, 3), 2, 1)
+# (3, 300, datetime.date(2022, 1, 1), Decimal('2100.00'))
+# (4, 100, datetime.date(2022, 1, 2), Decimal('2000.00'))
+# (5, 400, datetime.date(2022, 1, 2), Decimal('2200.00'))
+# (6, 500, datetime.date(2022, 1, 2), Decimal('2700.00'))
+# (7, 100, datetime.date(2022, 1, 3), Decimal('3000.00'))
+# (8, 400, datetime.date(2022, 1, 3), Decimal('1000.00'))
+# (9, 600, datetime.date(2022, 1, 3), Decimal('3000.00'))
+
+# MYSQL -----------------------------------------------------------------------------------------------------------------
+
+cur.execute("DROP TABLE IF EXISTS orders;")
+cur.execute("""
+            CREATE TABLE orders (
+    order_id INT PRIMARY KEY,
+    customer_id INT,
+    order_date DATE,
+    order_amount DECIMAL(10, 2)
+);
+            """)
+cur.execute("""
+            INSERT INTO orders (order_id, customer_id, order_date, order_amount) VALUES
+(1, 100, '2022-01-01', 2000.00),
+(2, 200, '2022-01-01', 2500.00),
+(3, 300, '2022-01-01', 2100.00),
+(4, 100, '2022-01-02', 2000.00),
+(5, 400, '2022-01-02', 2200.00),
+(6, 500, '2022-01-02', 2700.00),
+(7, 100, '2022-01-03', 3000.00),
+(8, 400, '2022-01-03', 1000.00),
+(9, 600, '2022-01-03', 3000.00);
+            """)
+
+con.commit()
+
+cur.execute("""
+            with cte1 as (
+              select *, row_number() over (partition by customer_id) as lagger
+            from orders
+            ),
+            repeats as (
+              select order_date, count(1) as repeats from cte1 where lagger <> 1 group by order_date
+            ),
+            new_custs as (
+              select order_date, count(1) as new_customers from cte1 where lagger = 1 group by order_date
+            ),
+            distinct_dates as (
+              select distinct(order_date) as order_date from orders
+            )
+            select dd.order_date, coalesce(repeats, 0) as repeats, coalesce(new_customers, 0) as new_customers from distinct_dates dd
+            left join repeats a on a.order_date = dd.order_date
+            left join new_custs b on b.order_date = dd.order_date
+            """)
+mysql_print()
