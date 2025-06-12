@@ -75,3 +75,95 @@ Didnt solve for shit again
 * Write a query to get the employee with second highest salary from employees and salaries table
     * employee: id, name
     * salaries: id, employee_id, salary
+
+## Airtel
+
+### Questions
+* RDD, DR diff
+* Hadoop and components (hdfs,mapreduce, YARN)
+* How is spark different
+* Jobs, stages, tasks
+* What optimizations have you done in spark
+* What airflow operators have you used
+* What is DAG
+* Some questions which I dont remember
+* What OS are you working on
+* What linux commands have you use
+* Do you awk, top, chmod .txt 777
+* Do you know git, what is merge vs rebase
+* Have you used hdfs commands on linux (edge node)
+
+### Coding
+* Do you know stack & queue
+* Implement a stack
+* Below first i/p o/p Question - give better than O(n)2 complexity (Utilizes a stack appraently, hint was read data from the right)
+* Next i/p o/p Questions - give better than O(n) complexity
+* What is binary search, time complexity, pseudo code for it
+* Write spark initilization code, read csv from hdfs and get the required output
+
+```
+public static void main(){
+    
+}
+
+Class Stack{
+    void Stack(int[] array_s){
+        
+        
+    }
+}
+
+create array
+    add elements into array
+
+Input:  {6, 4, 12, 5, 2, 10}
+Output: {12, 12, -1, 10, 10, -1}
+ 
+Input:  {1, 3, 2, 4}
+Output: {3, 4, 4, -1}
+
+for(i=0; i<list.length(); i++)
+    for j = i+1; j <list.length(); j++
+        if[list]
+
+stack = [4,12,5,2,10]
+
+input: nums = [8, 11, 13, 15, 1, 4, 6], target = 1
+Output: 4
+Input: arr[] = [5, 6, 7, 8, 9, 10, 1, 2, 3], target = 3
+Output: 8
+Input: nums = [4,5,6,7,0,1,2], target = 0 
+Output: 4
+
+    get mid element of list
+        check if target element is > or < mid element
+            use the half part of the list where element would exist
+
+id, user1, user2
+1, Sushovan, Abhishek
+2, Rohit, Sushovan
+3, Sunil, Sushovan
+4, Rohan, Sunil
+5, Manish, Rohit
+ 
+these is the log of linkedin views.
+treat it like:
+Sushovan has seen the profile of Abhishek
+Rohit has seen the profile of Sushovan
+Sunil has seen the profile of Sushovan
+Rohan has seen the profile of Sunil
+
+output:
+------
+Abhishek - 1
+Sushovan - 2
+Rohit - 1
+Rohan - 0
+Sunil - 1
+Manish - 0
+
+   df =  spark.read.format("csv").load("hdfs://log.csv")
+    df1 = df.select(col("user1")).union(df.select(col("user2"))).dropDuplicates()
+    df_likes = df.groupBy("user2").agg(count(lit(1)))
+    df1.join(df_likes, df1.user1 == df_likes.user2).fi
+```

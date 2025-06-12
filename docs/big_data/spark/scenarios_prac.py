@@ -16,14 +16,14 @@ import sys
 #         print(x)
         
 # Using Mysql
-import mysql.connector
-con = mysql.connector.connect(
-  host="localhost",
-  user="root",
-  password="pass",
-  database="scenarios"
-)
-cur = con.cursor()
+# import mysql.connector
+# con = mysql.connector.connect(
+#   host="localhost",
+#   user="root",
+#   password="pass",
+#   database="scenarios"
+# )
+# cur = con.cursor()
 def mysql_print():
   print()
   print (cur.column_names)
@@ -4459,46 +4459,95 @@ spark = SparkSession.builder.getOrCreate()
 
 # MYSQL -----------------------------------------------------------------------------------------------------------------
 
-cur.execute("DROP TABLE IF EXISTS orders;")
-cur.execute("""
-            CREATE TABLE orders (
-    order_id INT PRIMARY KEY,
-    customer_id INT,
-    order_date DATE,
-    order_amount DECIMAL(10, 2)
-);
-            """)
-cur.execute("""
-            INSERT INTO orders (order_id, customer_id, order_date, order_amount) VALUES
-(1, 100, '2022-01-01', 2000.00),
-(2, 200, '2022-01-01', 2500.00),
-(3, 300, '2022-01-01', 2100.00),
-(4, 100, '2022-01-02', 2000.00),
-(5, 400, '2022-01-02', 2200.00),
-(6, 500, '2022-01-02', 2700.00),
-(7, 100, '2022-01-03', 3000.00),
-(8, 400, '2022-01-03', 1000.00),
-(9, 600, '2022-01-03', 3000.00);
-            """)
+# cur.execute("DROP TABLE IF EXISTS orders;")
+# cur.execute("""
+#             CREATE TABLE orders (
+#     order_id INT PRIMARY KEY,
+#     customer_id INT,
+#     order_date DATE,
+#     order_amount DECIMAL(10, 2)
+# );
+#             """)
+# cur.execute("""
+#             INSERT INTO orders (order_id, customer_id, order_date, order_amount) VALUES
+# (1, 100, '2022-01-01', 2000.00),
+# (2, 200, '2022-01-01', 2500.00),
+# (3, 300, '2022-01-01', 2100.00),
+# (4, 100, '2022-01-02', 2000.00),
+# (5, 400, '2022-01-02', 2200.00),
+# (6, 500, '2022-01-02', 2700.00),
+# (7, 100, '2022-01-03', 3000.00),
+# (8, 400, '2022-01-03', 1000.00),
+# (9, 600, '2022-01-03', 3000.00);
+#             """)
 
-con.commit()
+# con.commit()
 
-cur.execute("""
-            with cte1 as (
-              select *, row_number() over (partition by customer_id) as lagger
-            from orders
-            ),
-            repeats as (
-              select order_date, count(1) as repeats from cte1 where lagger <> 1 group by order_date
-            ),
-            new_custs as (
-              select order_date, count(1) as new_customers from cte1 where lagger = 1 group by order_date
-            ),
-            distinct_dates as (
-              select distinct(order_date) as order_date from orders
-            )
-            select dd.order_date, coalesce(repeats, 0) as repeats, coalesce(new_customers, 0) as new_customers from distinct_dates dd
-            left join repeats a on a.order_date = dd.order_date
-            left join new_custs b on b.order_date = dd.order_date
-            """)
-mysql_print()
+# cur.execute("""
+#             with cte1 as (
+#               select *, row_number() over (partition by customer_id) as lagger
+#             from orders
+#             ),
+#             repeats as (
+#               select order_date, count(1) as repeats from cte1 where lagger <> 1 group by order_date
+#             ),
+#             new_custs as (
+#               select order_date, count(1) as new_customers from cte1 where lagger = 1 group by order_date
+#             ),
+#             distinct_dates as (
+#               select distinct(order_date) as order_date from orders
+#             )
+#             select dd.order_date, coalesce(repeats, 0) as repeats, coalesce(new_customers, 0) as new_customers from distinct_dates dd
+#             left join repeats a on a.order_date = dd.order_date
+#             left join new_custs b on b.order_date = dd.order_date
+#             """)
+# mysql_print()
+
+# =======================================================================================================================
+# Scenario Template
+# =======================================================================================================================
+
+# +----------+----------+                                       
+# | sell_date|   product|            ==>>            +----------+--------------------+---------+
+# +----------+----------+                            | sell_date|            products|null_sell|
+
+
+# SPARK ---------------------------------------------------------------------------------------------------------------------------
+
+schema = StructType([
+    StructField("Source", StringType(), nullable=False),
+    StructField("Destination", StringType(), nullable=False),
+    StructField("Distance", IntegerType(), nullable=False)
+])
+
+# Create the data
+data = [
+    ("Mumbai", "Pune", 150),
+    ("Pune", "Mumbai", 150),
+    ("Mumbai", "Pune", 150),
+    ("Delhi", "Agra", 200),
+    ("Agra", "Delhi", 200),
+    ("Delhi", "Jaipur", 250),
+    ("Jaipur", "Delhi", 250)
+]
+
+# Create the DataFrame
+df = spark.createDataFrame(data, schema=schema)
+
+# Show the DataFrame
+df.show()
+
+df.withColumn("pseudoSource", when(df.Destination > df.Source, df.Source).otherwise(df.Destination))\
+  .withColumn("pseudoDest", when(df.Destination > df.Source, df.Destination).otherwise(df.Source))\
+  .groupBy(col("pseudoSource"), col("pseudoDest")).agg(count(lit(1)).alias("Total_Trips"), sum(df.Distance).alias("Total_Distance"))\
+  .selectExpr("pseudoSource as Source", "pseudoDest as Destination", "Total_Trips", "Total_Distance")\
+  .show()
+  
+# df1=df.select('Source','Distance')
+# df2=df.select('Destination','Distance')
+# dff=df1.unionAll(df2)
+# dff.show()
+# res=dff.groupby('Source').agg(count('*').alias('total_trip'),sum('Distance').alias('Total_dist'))
+# res=res.withColumnRenamed('Source','Source1')
+# fin=res.join(df,res['Source1']==df['Source'],'inner').select('Source1','Destination','total_trip','Total_dist')
+# fin.dropDuplicates(['total_trip']).show()

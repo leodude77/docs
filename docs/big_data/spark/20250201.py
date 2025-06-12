@@ -16,7 +16,7 @@ os.environ['JAVA_HOME'] = r'/usr/lib/jvm/java-8-openjdk-amd64/jre'
 
 # os.environ['PYSPARK_SUBMIT_ARGS'] = '--packages com.datastax.spark:spark-cassandra-connector_2.12:3.5.1 pyspark-shell'
 # os.environ['PYSPARK_SUBMIT_ARGS'] = '--packages org.apache.spark:spark-avro_2.12:3.5.4 pyspark-shell'
-# os.environ['PYSPARK_SUBMIT_ARGS'] = '--packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.4 pyspark-shell'
+os.environ['PYSPARK_SUBMIT_ARGS'] = '--packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.4 pyspark-shell'
 
 
 conf = SparkConf().setAppName("pyspark").setMaster("local[*]").set("spark.driver.host", "localhost").set(
@@ -968,59 +968,77 @@ prod = spark.createDataFrame(data3, ["id", "product"])
 #--------------------------------------------------------------------------------------------------------------
 # FULL URL CODE
 
-import urllib.request
-import ssl
+# import urllib.request
+# import ssl
 
-urldata = (
+# urldata = (
 
-        urllib.request
-        .urlopen("https://randomuser.me/api/0.8/?results=10",context=ssl._create_unverified_context())
-        .read()
-        .decode("utf-8")
+#         urllib.request
+#         .urlopen("https://randomuser.me/api/0.8/?results=10",context=ssl._create_unverified_context())
+#         .read()
+#         .decode("utf-8")
 
+
+# )
+
+# print(urldata)
+
+# rdd = sc.parallelize([urldata])
+# df = spark.read.json(rdd)
+
+# df.show()
+# df.printSchema()
+
+# explodedf = df.withColumn("results",expr("explode(results)"))
+# explodedf.show()
+
+# explodedf.printSchema()
+
+# finalexplode =  explodedf.select(
+#         "nationality",
+#         "results.user.cell",
+#         "results.user.dob",
+#         "results.user.email",
+#         "results.user.gender",
+#         "results.user.location.city",
+#         "results.user.location.state",
+#         "results.user.location.street",
+#         "results.user.location.zip",
+#         "results.user.md5",
+#         "results.user.name.first",
+#         "results.user.name.last",
+#         "results.user.name.title",
+#         "results.user.password",
+#         "results.user.phone",
+#         "results.user.picture.large",
+#         "results.user.picture.medium",
+#         "results.user.picture.thumbnail",
+#         "results.user.registered",
+#         "results.user.salt",
+#         "results.user.sha1",
+#         "results.user.sha256",
+#         "results.user.username",
+#         "seed",
+#         "version"
+# )
+
+# finalexplode.show()
+# finalexplode.printSchema()
+
+#--------------------------------------------------------------------------------------------------------------
+# Kafka
+
+kafkadata = (
+    spark
+            .readStream
+            .format("kafka")
+            .option("kafka.bootstrap.servers","localhost:9092")
+            .option("subscribe","sparkstream")
+            .option("startingOffsets","latest")
+            .load()
+            .withColumn("value" , expr("cast(value as string)"))
+            .select("value")
 
 )
 
-print(urldata)
-
-rdd = sc.parallelize([urldata])
-df = spark.read.json(rdd)
-
-df.show()
-df.printSchema()
-
-explodedf = df.withColumn("results",expr("explode(results)"))
-explodedf.show()
-
-explodedf.printSchema()
-
-finalexplode =  explodedf.select(
-        "nationality",
-        "results.user.cell",
-        "results.user.dob",
-        "results.user.email",
-        "results.user.gender",
-        "results.user.location.city",
-        "results.user.location.state",
-        "results.user.location.street",
-        "results.user.location.zip",
-        "results.user.md5",
-        "results.user.name.first",
-        "results.user.name.last",
-        "results.user.name.title",
-        "results.user.password",
-        "results.user.phone",
-        "results.user.picture.large",
-        "results.user.picture.medium",
-        "results.user.picture.thumbnail",
-        "results.user.registered",
-        "results.user.salt",
-        "results.user.sha1",
-        "results.user.sha256",
-        "results.user.username",
-        "seed",
-        "version"
-)
-
-finalexplode.show()
-finalexplode.printSchema()
+kafkadata.writeStream.format("console").start().awaitTermination()
