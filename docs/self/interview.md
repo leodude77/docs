@@ -167,3 +167,14 @@ Manish - 0
     df_likes = df.groupBy("user2").agg(count(lit(1)))
     df1.join(df_likes, df1.user1 == df_likes.user2).fi
 ```
+
+### My questions to them
+* What is job about, E2E Data engineering
+    * Stack used:
+        * Migrated from oozie to airflow
+        * YARN to Kubernetes
+        * Iceberg on top of s3, Hive catalouge
+        * Use Java spark with multithreading
+        * Around 20TB of data processed in a day
+* Do you have data governance, Yes we do but can't talk about it out openly
+* You said iceberg, where is the data and what catalouge do you use. Said to uncover about Iceberg more
