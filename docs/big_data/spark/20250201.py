@@ -1,3 +1,4 @@
+# https://raw.githubusercontent.com/saiadityaus1/SparkCore1/refs/heads/master/Final_intellij_Code
 # ======================================================================================
 import os
 from pyspark import SparkConf, SparkContext
@@ -9,8 +10,8 @@ import sys
 
 python_path = sys.executable
 os.environ['PYSPARK_PYTHON'] = python_path
-os.environ['HADOOP_HOME'] = r'C:\Code\docs\docs\big_data\spark\hadoop'
-os.environ['JAVA_HOME'] = r'C:\Program Files\Java\jdk1.8.0_202'
+os.environ['HADOOP_HOME'] = r'/home/leo/Downloads/Code/docs/hadoop/bin'
+os.environ['JAVA_HOME'] = r'/usr/lib/jvm/java-8-openjdk-amd64/jre'
 ######################################################
 
 # os.environ['PYSPARK_SUBMIT_ARGS'] = '--packages com.datastax.spark:spark-cassandra-connector_2.12:3.5.1 pyspark-shell'
