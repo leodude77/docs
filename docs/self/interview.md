@@ -178,3 +178,29 @@ Manish - 0
         * Around 20TB of data processed in a day
 * Do you have data governance, Yes we do but can't talk about it out openly
 * You said iceberg, where is the data and what catalouge do you use. Said to uncover about Iceberg more
+
+### Round 2
+* Say an array, list has 0s and 1s, smartest way to sort it. (Told brute force approach, 1 way is break into 2 subarrays and shuffle 0s and 1s back and forth - not the smartest way)
+* Say you have list of different languages characters and numbers in list, how will you sort them, (Told using unicode but didnt really go anywhere)
+* Employee table with your_id,name,boss_id get me the names of bosses into the table(used inner join, doesnt work completely but told later left join since CEO will be missed)
+```
+["eng", "hindi";
+
+for (i = 0; i<arr.size(); i++)
+
+public static void main(String [] args){
+    String[] arr =  ["eng", "hindi"];
+    map <string, int>  unicode_map[][];
+
+    for (i = 0; i<arr.size(); i++){
+        int uni_code = arr[i][0] -- unicode value
+        unicode_map[arr[i]] = uni_code
+        got nothing...
+    }
+}
+
+empid, name, boss_id - emp
+
+select a.empid, a.name, a.boss_id, b.name from
+    emp a inner join emp b on a.boss_id = b.empid (Should be left join)
+```
